@@ -1,0 +1,12 @@
+{{!-- Override of: systems/shadowrun5e/dist/templates/v2/actor/E:/Foundry/V13/data/Data/modules/sr5-custom-ui/templates/actor/parts/attributes.hbs
+     Edit this file to customise the actor sheet layout. It shadows the SR5 system template. --}}
+{{> "systems/shadowrun5e/dist/templates/v2/actor/parts/limits.hbs" }}
+<div class="attributes">
+    {{#each system.attributes as |attribute attributeId|}} {{#unless attribute.hidden}}
+        {{> "systems/shadowrun5e/dist/templates/v2/actor/parts/attribute.hbs"
+                attribute=attribute
+                attributeField=(objValue @root.systemFields.attributes.fields attributeId)
+                rootId=@root.rootId
+        }}
+    {{/unless}} {{/each}}
+</div>

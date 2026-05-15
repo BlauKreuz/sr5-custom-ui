@@ -1,0 +1,23 @@
+{{!-- Override of: systems/shadowrun5e/dist/templates/v2/actor/E:/Foundry/V13/data/Data/modules/sr5-custom-ui/templates/actor/tabs/effects.hbs
+     Edit this file to customise the actor sheet layout. It shadows the SR5 system template. --}}
+<section class="tab hide-overflow{{#if tab.active}} active{{/if}}" data-group="{{tab.group}}" data-tab="{{tab.id}}">
+    <div class="fill-container">
+        {{> 'systems/shadowrun5e/dist/templates/v2/list-items/effect/header.hbs'
+            label='SR5.Effects'
+            cssClass="header-for-scrollable" }}
+        <div class="scrollable">
+            {{#each effects}}
+                {{> 'systems/shadowrun5e/dist/templates/v2/list-items/effect/item.hbs' item=this }}
+            {{/each}}
+            <!-- Owned Item Effects. Actor only. -->
+            {{#if itemEffects}}
+            {{> 'systems/shadowrun5e/dist/templates/v2/list-items/effect/header.hbs'
+                label='SR5.Labels.Sheet.ItemEffects'
+                isItemEffect=true }}
+            {{#each itemEffects}}
+                {{> 'systems/shadowrun5e/dist/templates/v2/list-items/effect/item.hbs' item=this isItemEffect=true }}
+            {{/each}}
+            {{/if}}
+        </div>
+    </div>
+</section>
