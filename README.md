@@ -1,4 +1,7 @@
 # sr5-custom-ui
+
+For help and suggestions: [![Discord Server](https://img.shields.io/badge/-Discord-%232c2f33?style=flat-square&logo=discord)](https://discord.gg/NyCX2nN4qP)
+
 Options to customize Shadowrun 5e user interface in Foundry VTT.
 
 - Four optional color schemes in addition to keeping the default.
