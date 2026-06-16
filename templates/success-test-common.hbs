@@ -1,19 +1,33 @@
 {{!--
   Override of: systems/shadowrun5e/dist/templates/apps/dialogs/parts/success-test-common.hbs
+  Updated for SR5 system 0.34.2.
   Changes from original:
     - Roll mode selection removed (custom roll-mode buttons in the dialog footer handle this)
-    - Modify Roll section always starts collapsed (no expanded class on first render)
-    - Pool and Limit use the modifiable-value entry partial (with breakdown list)
-    - Threshold kept as plain input (module JS wraps it with stepper buttons)
-    - Old Modifiers input removed (no longer functional in the new SR5 version)
-    - Manual Hits / Glitches block retained
+    - Modify Roll toggle button commented out (section starts collapsed)
+    - Threshold kept as plain input (module JS wraps it with stepper buttons; system now uses entry partial)
+    - Manual Hits / Glitches block retained (removed by system in 0.34.2)
 --}}
 <div class="dialog-content-common">
     {{#if test.hasCode}}
     <hr/>
     <div class="common-test">
-        {{test.code}}
-        {{#if test.hitsIcon}}<img class="test-icon" src="{{test.hitsIcon.icon}}" data-tooltip="{{test.hitsIcon.tooltip}}" />{{/if}}
+        <span class="test-code">
+            <span class="test-code-group">
+            {{#if test.codeTerms.pool.length}}
+                {{#each test.codeTerms.pool as |term|}}
+                    <span class="test-code-term {{#if term.tooltipSource}}has-tooltip{{/if}}" {{#if term.tooltipSource}}data-tooltip-source="{{term.tooltipSource}}"{{/if}}>{{term.text}}</span>{{#unless @last}} + {{/unless}}
+                {{/each}}
+            {{else}}
+                <span class="test-code-term">{{test.pool.value}}</span>
+            {{/if}}
+            </span>
+            {{#if test.codeTerms.limit.length}}
+            <span class="test-code-group">[{{#each test.codeTerms.limit as |term|}}<span class="test-code-term {{#if term.tooltipSource}}has-tooltip{{/if}}" {{#if term.tooltipSource}}data-tooltip-source="{{term.tooltipSource}}"{{/if}}>{{term.text}}</span>{{#unless @last}} + {{/unless}}{{/each}}]</span>
+            {{/if}}
+            {{#if test.codeTerms.threshold.length}}
+            <span class="test-code-group">({{#each test.codeTerms.threshold as |term|}}<span class="test-code-term {{#if term.tooltipSource}}has-tooltip{{/if}}" {{#if term.tooltipSource}}data-tooltip-source="{{term.tooltipSource}}"{{/if}}>{{term.text}}</span>{{#unless @last}} + {{/unless}}{{/each}})</span>
+            {{/if}}
+        </span>
     </div>
     {{/if}}
 
