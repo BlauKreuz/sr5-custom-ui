@@ -147,21 +147,23 @@ export function registerSettings() {
 
   game.settings.register(ID, 'useCustomLayout', {
     name: 'Custom Layout & Sizes',
-    hint: 'Apply custom sheet layout, spacing, and font-size changes.',
+    hint: 'Apply custom sheet layout, spacing, and font-size changes. Requires a page reload to take full effect.',
     scope: 'client',
     config: true,
     type: Boolean,
     default: true,
+    requiresReload: true,
     onChange: () => applyToggle('useCustomLayout', 'sr5cui-layout'),
   });
 
   game.settings.register(ID, 'useRollButtons', {
     name: 'Custom Roll Buttons in Test Dialogs',
-    hint: 'Replace the roll-mode dropdown with specified roll buttons. Re-open the dialog to see the changes.',
+    hint: 'Replace the roll-mode dropdown with dedicated roll buttons. Requires a page reload to take full effect.',
     scope: 'client',
     config: true,
     type: Boolean,
     default: true,
+    requiresReload: true,
     onChange: v => {
       applyToggle('useRollButtons', 'sr5cui-roll-buttons');
       if (!v) game.settings.set(ID, 'hideRollPrivacy', false);

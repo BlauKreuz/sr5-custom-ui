@@ -97,46 +97,157 @@ Hooks.on('ready', async () => {
     // arrive asynchronously and overwrite any registerPartial() made in 'init'.
     // By 'ready' all those socket responses have settled, so our versions win.
     // To add a new override: copy the system file to templates/, add a row here.
-    const SR5 = 'systems/shadowrun5e/dist/templates';
-    await Promise.all([
-        // Test dialog – document header (actor + item side by side)
-        [`${SR5}/apps/dialogs/parts/success-test-documents.hbs`,           'success-test-documents.hbs'],
-        // Test dialog
-        [`${SR5}/apps/dialogs/parts/success-test-common.hbs`,          'success-test-common.hbs'],
-        [`${SR5}/apps/dialogs/parts/success-test-entry.hbs`,          'success-test-entry.hbs'],
-        // Test message
+    //
+    // Registrations are conditional on useCustomLayout / useRollButtons.
+    // Changing either setting requires a page reload for template changes to take
+    // effect — Handlebars partials are compiled once at ready time.  The settings
+    // raise Foundry's reload prompt via requiresReload: true; CSS class toggles
+    // (body.sr5cui-layout, body.sr5cui-roll-buttons) are still instant.
+    const SR5         = 'systems/shadowrun5e/dist/templates';
+    const useLayout   = game.settings.get('sr5-custom-ui', 'useCustomLayout');
+    const useRollBtns = game.settings.get('sr5-custom-ui', 'useRollButtons');
+
+    const templates = [
+        // ── Always active ──────────────────────────────────────────────────────
+        // Supply result-type classes, roll icons, and damage display used by the
+        // color-scheme and dice-accordion CSS regardless of other settings.
         [`${SR5}/rolls/success-test-message.hbs`,                       'success-test-message.hbs'],
-        // Actor sheet – root
-        [`${SR5}/v2/actor/header.hbs`,                                  'actor/header.hbs'],
-        [`${SR5}/v2/actor/footer.hbs`,                                  'actor/footer.hbs'],
-        // Actor sheet – tabs
-        [`${SR5}/v2/actor/tabs/character-skills.hbs`,                   'actor/tabs/character-skills.hbs'],
-        [`${SR5}/v2/actor/tabs/bio.hbs`,                                'actor/tabs/bio.hbs'],
-        [`${SR5}/v2/actor/tabs/inventory.hbs`,                          'actor/tabs/inventory.hbs'],
-        [`${SR5}/v2/actor/tabs/magic.hbs`,                              'actor/tabs/magic.hbs'],
-        [`${SR5}/v2/actor/tabs/matrix.hbs`,                             'actor/tabs/matrix.hbs'],
-        [`${SR5}/v2/actor/tabs/description.hbs`,                        'actor/tabs/description.hbs'],
-        [`${SR5}/v2/actor/tabs/social.hbs`,                             'actor/tabs/social.hbs'],
-        [`${SR5}/v2/actor/tabs/effects.hbs`,                            'actor/tabs/effects.hbs'],
-        [`${SR5}/v2/actor/tabs/misc.hbs`,                               'actor/tabs/misc.hbs'],
-        [`${SR5}/v2/actor/tabs/actions.hbs`,                            'actor/tabs/actions.hbs'],
-        // Actor sheet – parts
-        [`${SR5}/v2/actor/parts/attributes.hbs`,                        'actor/parts/attributes.hbs'],
-        [`${SR5}/v2/actor/parts/attribute.hbs`,                         'actor/parts/attribute.hbs'],
-        [`${SR5}/v2/actor/parts/active-skills.hbs`,                     'actor/parts/active-skills.hbs'],
-        [`${SR5}/v2/actor/parts/language-and-knowledge-skills.hbs`,     'actor/parts/language-and-knowledge-skills.hbs'],
-        [`${SR5}/v2/actor/parts/condition-monitor.hbs`,                 'actor/parts/condition-monitor.hbs'],
-        [`${SR5}/v2/actor/parts/initiative.hbs`,                        'actor/parts/initiative.hbs'],
-        [`${SR5}/v2/actor/parts/limits.hbs`,                            'actor/parts/limits.hbs'],
-        [`${SR5}/v2/actor/parts/movement.hbs`,                          'actor/parts/movement.hbs'],
-        [`${SR5}/v2/actor/parts/special-attributes.hbs`,                'actor/parts/special-attributes.hbs'],
-        [`${SR5}/v2/actor/parts/common-rolls.hbs`,                      'actor/parts/common-rolls.hbs'],
-        // List-item – collapse/expand toggle icon
-        [`${SR5}/v2/list-items/toggle-expand-icon.hbs`,                 'list-items/toggle-expand-icon.hbs'],
-        // Skill list header – adds sr5cui-static-label class to non-rtg labels
-        [`${SR5}/v2/list-items/skill/header.hbs`,                       'list-items/skill/header.hbs'],
-    ].map(([sys, mod]) => registerTemplateOverride(sys, mod)));
+        // Parent wrappers that call success-test-message as a partial
+        [`${SR5}/rolls/opposed-actor-creator-message.hbs`,              'rolls/opposed-actor-creator-message.hbs'],
+        [`${SR5}/rolls/opposing-check-overwatch-score-message.hbs`,     'rolls/opposing-check-overwatch-score-message.hbs'],
+        [`${SR5}/rolls/opposing-mark-test-message.hbs`,                 'rolls/opposing-mark-test-message.hbs'],
+        // Damage partials inside test message
+        [`${SR5}/rolls/parts/DamagePair.hbs`,                           'rolls/parts/DamagePair.hbs'],
+        [`${SR5}/rolls/parts/Damage.hbs`,                               'rolls/parts/Damage.hbs'],
+    ];
+
+    // ── Custom Roll Buttons OR Custom Layout ───────────────────────────────────
+    // success-test-documents: wraps the actor + item header pair in
+    // .sr5cui-documents-row.  Layout uses flex to display them side by side;
+    // roll buttons need the wrapper present in the dialog DOM as well.
+    if (useRollBtns || useLayout) {
+        templates.push(
+            [`${SR5}/apps/dialogs/parts/success-test-documents.hbs`, 'success-test-documents.hbs'],
+        );
+    }
+
+    // ── Custom Roll Buttons ────────────────────────────────────────────────────
+    // success-test-common: removes the SR5 roll-mode dropdown (replaced by the
+    //   custom buttons).  Without this override the dropdown and custom buttons
+    //   coexist and conflict.
+    // success-test-entry: adds stepper widget markup for Pool / Limit rows.
+    if (useRollBtns) {
+        templates.push(
+            [`${SR5}/apps/dialogs/parts/success-test-common.hbs`, 'success-test-common.hbs'],
+            [`${SR5}/apps/dialogs/parts/success-test-entry.hbs`,  'success-test-entry.hbs'],
+        );
+    }
+
+    // ── Custom Layout & Sizes ──────────────────────────────────────────────────
+    // Actor sheet and list-item templates for layout / spacing / font-size changes.
+    if (useLayout) {
+        templates.push(
+            // Actor sheet – root
+            [`${SR5}/v2/actor/header.hbs`,                                  'actor/header.hbs'],
+            [`${SR5}/v2/actor/footer.hbs`,                                  'actor/footer.hbs'],
+            // Actor sheet – tabs
+            [`${SR5}/v2/actor/tabs/character-skills.hbs`,                   'actor/tabs/character-skills.hbs'],
+            [`${SR5}/v2/actor/tabs/bio.hbs`,                                'actor/tabs/bio.hbs'],
+            [`${SR5}/v2/actor/tabs/inventory.hbs`,                          'actor/tabs/inventory.hbs'],
+            [`${SR5}/v2/actor/tabs/magic.hbs`,                              'actor/tabs/magic.hbs'],
+            [`${SR5}/v2/actor/tabs/matrix.hbs`,                             'actor/tabs/matrix.hbs'],
+            [`${SR5}/v2/actor/tabs/description.hbs`,                        'actor/tabs/description.hbs'],
+            [`${SR5}/v2/actor/tabs/social.hbs`,                             'actor/tabs/social.hbs'],
+            [`${SR5}/v2/actor/tabs/effects.hbs`,                            'actor/tabs/effects.hbs'],
+            [`${SR5}/v2/actor/tabs/misc.hbs`,                               'actor/tabs/misc.hbs'],
+            [`${SR5}/v2/actor/tabs/actions.hbs`,                            'actor/tabs/actions.hbs'],
+            // Actor sheet – parts
+            [`${SR5}/v2/actor/parts/attributes.hbs`,                        'actor/parts/attributes.hbs'],
+            [`${SR5}/v2/actor/parts/attribute.hbs`,                         'actor/parts/attribute.hbs'],
+            [`${SR5}/v2/actor/parts/active-skills.hbs`,                     'actor/parts/active-skills.hbs'],
+            [`${SR5}/v2/actor/parts/language-and-knowledge-skills.hbs`,     'actor/parts/language-and-knowledge-skills.hbs'],
+            [`${SR5}/v2/actor/parts/condition-monitor.hbs`,                 'actor/parts/condition-monitor.hbs'],
+            [`${SR5}/v2/actor/parts/initiative.hbs`,                        'actor/parts/initiative.hbs'],
+            [`${SR5}/v2/actor/parts/limits.hbs`,                            'actor/parts/limits.hbs'],
+            [`${SR5}/v2/actor/parts/movement.hbs`,                          'actor/parts/movement.hbs'],
+            [`${SR5}/v2/actor/parts/special-attributes.hbs`,                'actor/parts/special-attributes.hbs'],
+            [`${SR5}/v2/actor/parts/common-rolls.hbs`,                      'actor/parts/common-rolls.hbs'],
+            // List-item – collapse/expand toggle icon
+            [`${SR5}/v2/list-items/toggle-expand-icon.hbs`,                 'list-items/toggle-expand-icon.hbs'],
+            // Skill list header – adds sr5cui-static-label class to non-rtg labels
+            [`${SR5}/v2/list-items/skill/header.hbs`,                       'list-items/skill/header.hbs'],
+        );
+    }
+
+    await Promise.all(templates.map(([sys, mod]) => registerTemplateOverride(sys, mod)));
 });
+
+// ============================================================
+// Code-row toggle – click card-content--code to show/hide metrics.
+// Uses delegated listener so it works for every card regardless of
+// when renderChatMessageHTML fires or how many times it re-fires.
+// ============================================================
+let _codeToggleReady = false;
+function setupCodeToggle() {
+    if (_codeToggleReady) return;
+    _codeToggleReady = true;
+    document.addEventListener('click', e => {
+        const toggle = e.target.closest('.sr5cui-code-toggle');
+        if (!toggle) return;
+        // Find the next sibling that is the metrics section.
+        let sib = toggle.nextElementSibling;
+        while (sib && !sib.classList.contains('card-content--metrics')) {
+            sib = sib.nextElementSibling;
+        }
+        if (!sib) return;
+        const hidden = sib.classList.toggle('sr5cui-metrics-hidden');
+        toggle.classList.toggle('sr5cui-metrics-open', !hidden);
+    });
+}
+
+// ============================================================
+// Show-roll toggle – replace SR5's jQuery slideUp/slideDown (200 ms,
+// asymmetric feel) with a CSS max-height transition so expand and
+// collapse use identical 0.25s ease-in-out speed.
+// Intercepts the click in capture phase so it runs before SR5's
+// bubbling jQuery handler.
+// display is managed inline (block on expand, none after collapse)
+// so the collapsed element is completely out of layout, identical to
+// SR5's original display:none state and preserving accordion behaviour.
+// ============================================================
+let _showRollReady = false;
+function setupShowRollToggle() {
+    if (_showRollReady) return;
+    _showRollReady = true;
+    document.addEventListener('click', e => {
+        const btn = e.target.closest('.show-roll');
+        if (!btn) return;
+        const card = btn.closest('.chat-card');
+        if (!card) return;
+        const cardRolls = card.querySelector('.card-rolls');
+        if (!cardRolls) return;
+        const hasContent = cardRolls.querySelector('.dice-rolls, .dice-roll-content');
+        if (!hasContent) return;
+        // Stop SR5's jQuery handler from also firing.
+        e.stopImmediatePropagation();
+        if (cardRolls.classList.contains('sr5cui-rolls-visible')) {
+            // Collapse: remove visible class → CSS transition runs → set display:none after.
+            cardRolls.classList.remove('sr5cui-rolls-visible');
+            cardRolls.addEventListener('transitionend', () => {
+                if (!cardRolls.classList.contains('sr5cui-rolls-visible')) {
+                    cardRolls.style.display = 'none';
+                }
+            }, { once: true });
+        } else {
+            // Expand: make element visible first, force reflow, then start transition.
+            const diceRolls = cardRolls.querySelector('.dice-rolls');
+            if (diceRolls) diceRolls.style.display = 'flex';
+            cardRolls.style.display = 'block';
+            cardRolls.getBoundingClientRect(); // force reflow so transition fires from max-height:0
+            cardRolls.classList.add('sr5cui-rolls-visible');
+        }
+    }, true); // capture = true → fires before target/bubble phase
+}
 
 // ============================================================
 // Roll card delay – hide SR5 test messages until the delay expires
@@ -239,7 +350,16 @@ function sr5DelayCard(message, element) {
 Hooks.on('renderChatInput', (_app, elements) => {
     const rollPrivacy = elements['#roll-privacy'] ?? document.getElementById('roll-privacy');
     if (!rollPrivacy) return;
-    if (document.getElementById('sr5e-success-test-button-prompt')) return; // already present
+
+    // V14 adds class="vertical" to #roll-privacy in notification mode (sidebar closed),
+    // which Foundry's CSS uses to stack the buttons in a column.  Remove it so the
+    // buttons always stay in a horizontal row, matching the sidebar-open layout.
+    rollPrivacy.classList.remove('vertical');
+
+    // Check THIS container only — not document.getElementById, which finds the OLD
+    // sidebar's button while it is still in the DOM during a re-render cycle, causing
+    // the guard to fire too early and leaving the new #roll-privacy without the button.
+    if (rollPrivacy.querySelector('#sr5e-success-test-button-prompt')) return;
 
     const button = document.createElement('button');
     button.type = 'button';
@@ -255,12 +375,23 @@ Hooks.on('renderChatInput', (_app, elements) => {
 // V13 non-deprecated hook – HTMLElement argument.
 Hooks.on('renderChatMessageHTML', (message, element, _data) => {
     sr5DelayCard(message, element);
+    // Code toggle and show-roll override are layout features — only activate when
+    // Custom Layout & Sizes is ON.  Without it, SR5's native jQuery slideDown runs
+    // unimpeded and .card-rolls has no CSS max-height constraint.
+    if (game.settings.get('sr5-custom-ui', 'useCustomLayout')) {
+        setupCodeToggle();
+        setupShowRollToggle();
+    }
 });
 
 // Legacy hook – jQuery argument; only active if something else already
 // registered it (Foundry only fires it conditionally in V13).
 Hooks.on('renderChatMessage', (message, html, _data) => {
     sr5DelayCard(message, html);
+    if (game.settings.get('sr5-custom-ui', 'useCustomLayout')) {
+        setupCodeToggle();
+        setupShowRollToggle();
+    }
 });
 
 
@@ -270,12 +401,16 @@ Hooks.on('renderTestDialog', (app, html, _data) => {
 
     if (!useRollBtns && !useSteppers) return;
 
+    // In ApplicationV2 (0.34.2+), the hook receives an HTMLElement, not jQuery.
+    // Wrap once and use $html throughout — it covers the full window including footer.
+    const $html = $(html);
+
     if (useRollBtns) {
         // --- 1. Hide the roll-mode controls (works for both old <select> and new split-button) ---
         // The module's HBS override removes these entirely, but if the system template is used
         // instead (template-cache race), we hide them here so they don't crowd our roll buttons.
-        html.find('select[name="test.data.options.rollMode"]').closest('.form-group').addClass('sr5cui-hidden');
-        html.find('.roll-mode-controls').closest('.form-group').addClass('sr5cui-hidden');
+        $html.find('select[name="test.data.options.rollMode"]').closest('.form-group').addClass('sr5cui-hidden');
+        $html.find('.roll-mode-controls').closest('.form-group').addClass('sr5cui-hidden');
     }
 
     if (useSteppers) {
@@ -284,7 +419,7 @@ Hooks.on('renderTestDialog', (app, html, _data) => {
         // so its width stays consistent with the other stepper inputs.
         // Disabled inputs (e.g. Drain Value) also get the ghost wrapper so they
         // share the same layout/width as active stepper inputs — buttons are invisible.
-        html.find('input[type="number"]').each(function () {
+        $html.find('input[type="number"]').each(function () {
             const $input = $(this);
             // Skip if already wrapped (re-render guard)
             if ($input.parent().hasClass('sr5cui-stepper')) return;
@@ -316,19 +451,17 @@ Hooks.on('renderTestDialog', (app, html, _data) => {
 
     if (!useRollBtns) return;
 
-    // --- 2. Use app.element (stable outer frame) for everything in .dialog-buttons ---
-    // On re-renders, .dialog-buttons is a top-level sibling in `html`, so html.find('.dialog-buttons')
-    // returns empty. app.element always wraps the full window as a proper DOM ancestor.
-    const outerEl = app.element;
+    // --- 2. ApplicationV2 footer uses data-action="roll" / data-action="cancel" ---
+    // (Old Dialog used data-button="roll" and .dialog-buttons container.)
 
-    // Hide the original Roll button.
-    outerEl.find('[data-button="roll"]').addClass('sr5cui-hidden');
+    // Hide the built-in Roll button.
+    $html.find('[data-action="roll"]').addClass('sr5cui-hidden');
 
     // Remove any buttons from a previous render cycle before re-injecting.
-    outerEl.find('.sr5cui-roll-buttons').remove();
+    $html.find('.sr5cui-roll-buttons').remove();
 
-    // --- 4. Build the four roll-mode buttons and insert before the Cancel button ---
-    const btnContainer = outerEl.find('.dialog-buttons');
+    // --- 3. Build the four roll-mode buttons and insert before the Cancel button ---
+    const $footer = $html.find('[data-application-part="footer"]');
     const wrapper = $('<div class="sr5cui-roll-buttons"></div>');
 
     for (const key of ROLL_MODE_ORDER) {
@@ -351,30 +484,38 @@ Hooks.on('renderTestDialog', (app, html, _data) => {
             event.preventDefault();
             event.stopPropagation();
 
-            // Set the roll mode directly on the test data so SR5 picks it up on submit.
-            // The new SR5 system uses button-based roll-mode controls (no <select>);
-            // setProperty mirrors what SR5's own roll-mode-button handler does.
-            foundry.utils.setProperty(app.data, 'test.data.options.rollMode', key);
-
-            // Submit via the existing roll-button data object (sets selectedButton = 'roll').
-            await app.submit(app.data.buttons.roll);
+            // Replicate what TestDialog's internal static #roll action does:
+            // 1. Mark the selected button so isFormDisabled() returns false.
+            app.selectedButton = 'roll';
+            // 2. Flush current form values into app.test (pool modifiers, etc.).
+            app.applyFormData();
+            // 3. Apply our chosen roll mode AFTER applyFormData so it isn't overwritten.
+            foundry.utils.setProperty(app.test, 'data.options.rollMode', key);
+            // 4. Store and resolve the selection promise so the caller gets test.data.
+            app.selection = app.test.data;
+            if (!app._selectionSettled) {
+                app._selectionSettled = true;
+                app._selectionResolve(app.selection);
+            }
+            // 5. Close the dialog (same as what #roll does after resolving).
+            await app.close();
         });
 
         wrapper.append(btn);
     }
 
-    // Insert the four buttons before the cancel button (or prepend to the container).
-    const cancelBtn = btnContainer.find('[data-button="cancel"]');
+    // Insert the four buttons before the cancel button (or append to footer).
+    const cancelBtn = $footer.find('[data-action="cancel"]');
     if (cancelBtn.length) {
         wrapper.insertBefore(cancelBtn);
     } else {
-        btnContainer.prepend(wrapper);
+        $footer.append(wrapper);
     }
 
     // Apply per-scheme background image directly as inline style — CSS alone cannot
     // reliably override Foundry's own inline style on .window-content.
     const schemeId  = game.settings.get('sr5-custom-ui', 'colorScheme');
-    const winContent = outerEl[0].querySelector('.window-content');
+    const winContent = html.querySelector('.window-content');
     if (winContent) {
         if (schemeId !== 'default') {
             const root    = document.documentElement;
@@ -399,16 +540,16 @@ Hooks.on('renderTestDialog', (app, html, _data) => {
     if (!app._sr5cuiFrozenSize) {
         app.setPosition({ height: 'auto', width: 250 });
         app._sr5cuiFrozenSize = {
-            width:  outerEl[0].offsetWidth,
-            height: outerEl[0].offsetHeight,
+            width:  html.offsetWidth,
+            height: html.offsetHeight,
         };
         // Keep frozen size in sync when the user manually resizes the dialog.
         new ResizeObserver(() => {
             app._sr5cuiFrozenSize = {
-                width:  outerEl[0].offsetWidth,
-                height: outerEl[0].offsetHeight,
+                width:  html.offsetWidth,
+                height: html.offsetHeight,
             };
-        }).observe(outerEl[0]);
+        }).observe(html);
     } else {
         app.setPosition({ height: app._sr5cuiFrozenSize.height, width: app._sr5cuiFrozenSize.width });
     }
@@ -516,11 +657,40 @@ Hooks.on('ready', () => {
     }, true); // capture phase – runs before other listeners on the same element
 });
 
+// ─── Initiative formula reformatter ──────────────────────────────────────────
+// Turns:  max(6[Base] + 1d6[Dice] - 0[Wounds] - 0[Pass],0)
+// Into:   Base: 6 + 1d6               (wounds = 0)
+//         Base: 6 + 1d6 - 2[Wounds]   (wounds > 0)
+function _reformatInitiativeFormulas(el) {
+    el.querySelectorAll('.dice-formula').forEach(formulaEl => {
+        const text = formulaEl.textContent.trim();
+        const m = text.match(
+            /^max\((\d+)\[Base\]\s*\+\s*(\d+d6)\[Dice\]\s*-\s*(\d+)\[Wounds\]\s*-\s*\d+\[Pass\],\s*0\)$/
+        );
+        if (!m) return;
+        const [, base, dice, wounds] = m;
+        let out = `Base: ${base} + ${dice}`;
+        if (Number(wounds) > 0) out += ` - ${wounds}[Wounds]`;
+        formulaEl.textContent = out;
+    });
+}
+
+// Tracks which message IDs should have their SR5 dice visible.
+// Persists across re-renders (e.g. Dice So Nice triggers message.update() after
+// animation, causing Foundry to replace the element wholesale via #rerenderMessage).
+const _accordionDiceShown = new Set();
+
 // Stamp chat cards (.sr5.chat-card) when they render, add roll-mode class,
 // and inject the roll-mode icon next to the speaker name.
 Hooks.on('renderChatMessageHTML', (message, element, _data) => {
     const el = element instanceof HTMLElement ? element : (element[0] ?? null);
     if (!el) return;
+
+    const useLayout = game.settings.get('sr5-custom-ui', 'useCustomLayout');
+
+    // Formula reformat is a layout change — only run when Custom Layout is on.
+    if (useLayout) _reformatInitiativeFormulas(el);
+
     const card = el.classList.contains('sr5') && el.classList.contains('chat-card')
         ? el
         : el.querySelector('.sr5.chat-card');
@@ -548,25 +718,53 @@ Hooks.on('renderChatMessageHTML', (message, element, _data) => {
             // .dice-roll, and expands it by adding the .expanded class to .dice-roll.
             el.querySelectorAll('.dice-roll').forEach(dr => dr.classList.add('expanded'));
 
-            // Auto-open the new SR5 card's dice (SR5 CSS defaults to display:none).
-            if (card) {
-                const newDiceRolls = card.querySelector('.dice-rolls');
-                if (newDiceRolls) newDiceRolls.style.display = 'flex';
-            }
-            // Collapse all SR5 cards currently in the DOM.
+            // Mark this message's SR5 dice as "should be shown".
+            if (card) _accordionDiceShown.add(message.id);
+
+            // Collapse all SR5 cards currently in the DOM and remove them from tracking.
             // Reset .dice-rolls to display:none first so SR5 will slide it open
             // (not closed) when .show-roll is clicked after re-opening .card-rolls.
             document.querySelectorAll('.sr5.chat-card').forEach(otherCard => {
+                const msgEl = otherCard.closest('[data-message-id]');
+                if (msgEl) _accordionDiceShown.delete(msgEl.dataset.messageId);
                 const diceRolls = otherCard.querySelector('.dice-rolls');
                 if (diceRolls) $(diceRolls).stop(true, true).css('display', 'none');
                 const rolls = otherCard.querySelector('.card-rolls');
-                if (rolls) $(rolls).stop(true, true).slideUp(200);
+                if (rolls) {
+                    // Remove sr5cui-rolls-visible so the CSS max-height transition
+                    // collapses the panel when Custom Layout is active (no-op otherwise).
+                    rolls.classList.remove('sr5cui-rolls-visible');
+                    $(rolls).stop(true, true).slideUp(200);
+                }
             });
+
             // Collapse all Foundry native roll messages currently in the DOM.
             // Removing .expanded triggers the CSS grid-template-rows transition.
             document.querySelectorAll('.chat-message .dice-roll.expanded').forEach(dr => {
                 dr.classList.remove('expanded');
             });
+        }
+
+        // On EVERY render (new or re-render): reapply dice-shown state for tracked messages.
+        // renderChatMessageHTML fires BEFORE the element is inserted into the DOM, so
+        // defer via setTimeout(0) to run after insertion — direct style assignment then
+        // reliably overrides the CSS default of display:none on .card-rolls / .dice-rolls.
+        if (card && _accordionDiceShown.has(message.id)) {
+            const cardRef = card;
+            setTimeout(() => {
+                if (!cardRef.isConnected) return;
+                const cardRolls = cardRef.querySelector('.card-rolls');
+                const diceRolls = cardRef.querySelector('.dice-rolls');
+                if (cardRolls) {
+                    cardRolls.style.display = 'block';
+                    // Also add the CSS class so the max-height transition lifts
+                    // when Custom Layout is active; no-op without the layout gate.
+                    cardRolls.classList.add('sr5cui-rolls-visible');
+                }
+                if (diceRolls) diceRolls.style.display = 'flex';
+                // Scroll to bottom so the expanded dice aren't clipped by the log viewport.
+                ui.chat?.scrollBottom?.();
+            }, 0);
         }
     }
 
@@ -579,35 +777,22 @@ Hooks.on('renderChatMessageHTML', (message, element, _data) => {
     card.classList.add(`sr5cui-mode-${rollMode}`);
 
     // ── Strip show-description clickability when description has no visible content ──
-    // description.description.value may be an empty ProseMirror string ("<p></p>") which
-    // is truthy in Handlebars, so the card-description div is rendered but visually empty.
-    card.querySelectorAll('.card-content.show-description').forEach(showDiv => {
-        const descDiv = showDiv.nextElementSibling;
-        if (!descDiv || !descDiv.classList.contains('card-description')) return;
-        const hasText = descDiv.textContent.trim().length > 0;
-        const hasImg  = descDiv.querySelector('img, figure') !== null;
-        if (!hasText && !hasImg) {
-            showDiv.classList.remove('clickable', 'show-description');
-            showDiv.classList.add('sr5cui-no-description');
-            descDiv.style.display = 'none';
-        }
-    });
-
-    // ── Restore .card-rolls visibility when .show-roll is clicked ────────────
-    // SR5's own _chatToggleCardRolls handler already animates .dice-rolls open/closed.
-    // Our only job here is to instantly un-hide .card-rolls if the accordion collapsed
-    // it, so SR5's .dice-rolls animation inside it is actually visible.
-    // Guard against double-registration on re-renders.
-    if (!card.dataset.sr5cuiRollToggle) {
-        card.dataset.sr5cuiRollToggle = '1';
-        card.querySelectorAll('.show-roll').forEach(showRoll => {
-            showRoll.addEventListener('click', () => {
-                const cardRolls = card.querySelector('.card-rolls');
-                if (cardRolls && !$(cardRolls).is(':visible')) {
-                    // Instant show — SR5 animates .dice-rolls inside; no double-animation.
-                    $(cardRolls).show();
-                }
-            });
+    // Gated behind Custom Layout: the sr5cui-no-description CSS that styles the
+    // result is also layout-gated, so don't mutate the DOM when layout is off.
+    if (useLayout) {
+        // description.description.value may be an empty ProseMirror string ("<p></p>")
+        // which is truthy in Handlebars, so the card-description div is rendered but
+        // visually empty.
+        card.querySelectorAll('.card-content.show-description').forEach(showDiv => {
+            const descDiv = showDiv.nextElementSibling;
+            if (!descDiv || !descDiv.classList.contains('card-description')) return;
+            const hasText = descDiv.textContent.trim().length > 0;
+            const hasImg  = descDiv.querySelector('img, figure') !== null;
+            if (!hasText && !hasImg) {
+                showDiv.classList.remove('clickable', 'show-description');
+                showDiv.classList.add('sr5cui-no-description');
+                descDiv.style.display = 'none';
+            }
         });
     }
 

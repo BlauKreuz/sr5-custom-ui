@@ -81,7 +81,7 @@
       '--sr5cui-link-color':              'rgb(229, 229, 229)', /* SR5 .sr5v2 a */
       '--sr5cui-hint-color':              'rgba(0, 0, 0, 0.6)',                 /* SR5 .sr5v2 .form-group p.hint */
       '--sr5cui-horizontal-line':         '#ffffff2d',               /* SR5 .sr5v2 .sheet-footer border-top */
-      '--sr5cui-hr-image':               'linear-gradient(to right, #000000f8 0%, #ffffffb5 50%,  #00000091 100%)', /* SR5 .sr5v2 hr background */
+   // '--sr5cui-hr-image':               'linear-gradient(to right, #000000f8 0%, #ffffffb5 50%,  #00000091 100%)', /* not used — CSS hardcodes this gradient */
       '--sr5cui-scrollbar-thumb':         '#ffffff',               /* SR5 scrollbar-color thumb */
       '--sr5cui-scrollbar-track':         '#ffffff40',               /* SR5 scrollbar-color track */
       '--sr5cui-attribute-bg':            '#000000cc',               /* attribute value button/input background */  
