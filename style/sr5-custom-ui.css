@@ -11,7 +11,7 @@
 
    Target windows:
      .sr5v2          SR5 actor / item sheets
-     #test-dialog    SR5 roll dialog  (also matched by .sr5.form-dialog below)
+     #test-dialog-v2    SR5 roll dialog  (also matched by .sr5.form-dialog below)
      .sr5.form-dialog  All SR5 FormDialog windows (damage-application, delete-confirmation,
                        move-inventory, test-dialog, -)
      .journal-sheet  Foundry journal-entry windows
@@ -38,13 +38,25 @@
     text-shadow: var(--sr5cui-text-shadow, none) !important;
 }
 
+/* Keep roll-mode buttons horizontal when the sidebar is closed.
+   V14 adds class="vertical" to #roll-privacy in notification mode, which
+   Foundry's CSS uses to stack buttons in a column.  The renderChatInput hook
+   removes that class, but this rule provides a CSS-level fallback. */
+#roll-privacy.vertical {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+}
+
 /* Hide #roll-privacy mode-selector buttons (2nd-5th) while keeping the
-   active-mode indicator (1st).  Covers sidebar + popped-out chat windows. */
+   SR5 die button (1st, injected by renderChatInput).  The renderChatInput hook
+   ensures the die button is always prepended as the first child even on re-renders
+   (sidebar toggle), so :not(:first-child) reliably matches all roll-mode buttons.
+   Covers sidebar + popped-out / notification-mode chat windows. */
 body.sr5cui-hide-roll-privacy #roll-privacy button:not(:first-child) {
     display: none !important;
 }
 body.sr5cui-hide-roll-privacy #roll-privacy button:first-child {
-    border-radius: 4px;  /* Round the left edge of the active button when split-button layout is on */
+    border-radius: 4px;  /* Round all edges of the solo die button */
 }
 
 /* -- Chat controls button styling -------------------------------------------
@@ -74,7 +86,7 @@ body.sr5cui-colors #chat-controls .ui-control[aria-pressed="true"] {
 /* -- 1. FORM CONTROLS - inputs, selects, checkboxes ------------------------ */
 /*
    Canonical definitions for every interactive form element inside .sr5v2 and
-   #test-dialog.  CSS-variable fallback values provide a usable appearance even
+   #test-dialog-v2.  CSS-variable fallback values provide a usable appearance even
    when no colour scheme sets the vars.  Colour schemes only need to override
    the --sr5cui-* variables listed in SCHEME_VARS - they never need to
    duplicate these rules.
@@ -82,16 +94,22 @@ body.sr5cui-colors #chat-controls .ui-control[aria-pressed="true"] {
 
 /* - Text / number inputs and <select> - */
 
-body.sr5cui-colors :is(.sr5v2, #test-dialog) input:not([type=checkbox]):not([type=radio]):not([class=sheet-name]):not([class=disabled-for-display]),
-body.sr5cui-colors :is(.sr5v2, #test-dialog, .journal-sheet) select {
+body.sr5cui-colors :is(.sr5v2, #test-dialog-v2) input:not([type=checkbox]):not([type=radio]):not([class=sheet-name]):not([class=disabled-for-display]),
+body.sr5cui-colors :is(.sr5v2, #test-dialog-v2, .journal-sheet) select {
     background: var(--sr5cui-input-bg,    #1a1a1a);
     color:      var(--sr5cui-input-color, #e0e0e0);
 }
 /* disabled-for-display inputs that have a name are user-editable (e.g. Force).
    Give them the same background. Ones without a name (e.g. Drain) stay unstyled. */
-body.sr5cui-colors :is(.sr5v2, #test-dialog) input.disabled-for-display[name] {
+body.sr5cui-colors :is(.sr5v2, #test-dialog-v2) input.disabled-for-display[name] {
     background: var(--sr5cui-input-bg,    #1a1a1a);
     color:      var(--sr5cui-input-color, #e0e0e0);
+}
+
+body.sr5cui-colors .sr5v2 button[data-action="rollInitiative"],
+body.sr5cui-colors .sr5v2.form-dialog .window-content input:disabled {
+    background-color: rgba(1, 1, 1, 0.28) !important;
+    color: var(--sr5cui-input-color, #e0e0e0);
 }
 
 /* Hide the native browser number-spinner arrows - looks wrong on compact inputs */
@@ -106,13 +124,13 @@ body.sr5cui-colors .sr5v2 input[type=number] {
 }
 
 /* Focus ring - overrides Foundry's orange glow on both inputs and buttons */
-body.sr5cui-colors :is(.sr5v2, #test-dialog) input:focus,
-body.sr5cui-colors :is(.sr5v2, #test-dialog, .journal-sheet) select:focus {
+body.sr5cui-colors :is(.sr5v2, #test-dialog-v2) input:focus,
+body.sr5cui-colors :is(.sr5v2, #test-dialog-v2, .journal-sheet) select:focus {
     outline:        2px solid var(--sr5cui-input-focus, #5599cc) !important;
     outline-offset: -2px;
     box-shadow:     0 0 5px var(--sr5cui-input-focus, #5599cc) !important;
 }
-body.sr5cui-colors :is(.sr5v2, #test-dialog) button:focus {
+body.sr5cui-colors :is(.sr5v2, #test-dialog-v2) button:focus {
     outline:    1px solid var(--sr5cui-input-focus, #5599cc) !important;
     box-shadow: 0 0 4px  var(--sr5cui-input-focus, #5599cc) !important;
 }
@@ -123,12 +141,12 @@ body.sr5cui-colors .sr5v2 input::placeholder {
 }
 
 /* <select> option rows: themed background matching the scheme */
-body.sr5cui-colors :is(.sr5v2, #test-dialog, .journal-sheet) select > option {
+body.sr5cui-colors :is(.sr5v2, #test-dialog-v2, .journal-sheet) select > option {
     background: var(--sr5cui-select-opt-bg,    #1a1a1a);
     color:      var(--sr5cui-select-opt-color, #e0e0e0);
 }
 /* Selected (checked) option */
-body.sr5cui-colors :is(.sr5v2, #test-dialog, .journal-sheet) select > option:checked {
+body.sr5cui-colors :is(.sr5v2, #test-dialog-v2, .journal-sheet) select > option:checked {
     background: var(--sr5cui-select-opt-selected-bg,    #1a3a66);
     color:      var(--sr5cui-select-opt-selected-color, #ffffff);
 }
@@ -139,8 +157,8 @@ body.sr5cui-colors :is(.sr5v2, #test-dialog, .journal-sheet) select > option:che
    Gate: sr5cui-colors - applies whenever any non-default scheme is active.
 */
 
-body.sr5cui-colors :is(.sr5v2, #test-dialog) input[type=checkbox],
-body.sr5cui-colors :is(.sr5v2, #test-dialog) input[type=radio] {
+body.sr5cui-colors :is(.sr5v2, #test-dialog-v2) input[type=checkbox],
+body.sr5cui-colors :is(.sr5v2, #test-dialog-v2) input[type=radio] {
     appearance:         none !important;
     -webkit-appearance: none !important;
     display:            inline-block;
@@ -156,21 +174,21 @@ body.sr5cui-colors :is(.sr5v2, #test-dialog) input[type=radio] {
 }
 
 /* Kill Foundry's FA pseudo-elements so they don't interfere */
-body.sr5cui-colors :is(.sr5v2, #test-dialog) input[type=checkbox]::before,
-body.sr5cui-colors :is(.sr5v2, #test-dialog) input[type=checkbox]::after,
-body.sr5cui-colors :is(.sr5v2, #test-dialog) input[type=radio]::before,
-body.sr5cui-colors :is(.sr5v2, #test-dialog) input[type=radio]::after {
+body.sr5cui-colors :is(.sr5v2, #test-dialog-v2) input[type=checkbox]::before,
+body.sr5cui-colors :is(.sr5v2, #test-dialog-v2) input[type=checkbox]::after,
+body.sr5cui-colors :is(.sr5v2, #test-dialog-v2) input[type=radio]::before,
+body.sr5cui-colors :is(.sr5v2, #test-dialog-v2) input[type=radio]::after {
     content: none !important;
 }
 
 /* Checked state: brighter border, everything else inherited from base */
-body.sr5cui-colors :is(.sr5v2, #test-dialog) input[type=checkbox]:checked,
-body.sr5cui-colors :is(.sr5v2, #test-dialog) input[type=radio]:checked {
+body.sr5cui-colors :is(.sr5v2, #test-dialog-v2) input[type=checkbox]:checked,
+body.sr5cui-colors :is(.sr5v2, #test-dialog-v2) input[type=radio]:checked {
     border-color: var(--sr5cui-checkbox-checked-border, #bbb);
 }
 
 /* Checkmark - checkbox only */
-body.sr5cui-colors :is(.sr5v2, #test-dialog) input[type=checkbox]:checked::before {
+body.sr5cui-colors :is(.sr5v2, #test-dialog-v2) input[type=checkbox]:checked::before {
     content:     "\2714" !important;
     display:     block !important;
     position:    absolute;
@@ -184,7 +202,7 @@ body.sr5cui-colors :is(.sr5v2, #test-dialog) input[type=checkbox]:checked::befor
 }
 
 /* Radio dot - centred filled circle */
-body.sr5cui-colors :is(.sr5v2, #test-dialog) input[type=radio]:checked::before {
+body.sr5cui-colors :is(.sr5v2, #test-dialog-v2) input[type=radio]:checked::before {
     content:       "" !important;
     display:       block !important;
     position:      absolute;
@@ -197,7 +215,7 @@ body.sr5cui-colors :is(.sr5v2, #test-dialog) input[type=radio]:checked::before {
    The visual rules above already apply.  This block just adds the exact
    dimensions needed to fit the compact test-dialog form rows.
 */
-body.sr5cui-roll-buttons #test-dialog input[type=checkbox] {
+body.sr5cui-roll-buttons #test-dialog-v2 input[type=checkbox] {
     flex:       0 0 20px !important;
     align-self: center;
     width:      20px !important;
@@ -206,7 +224,7 @@ body.sr5cui-roll-buttons #test-dialog input[type=checkbox] {
     min-height: 20px;
 }
 /* Checkmark line-height matches the 20px box */
-body.sr5cui-roll-buttons #test-dialog input[type=checkbox]:checked::before {
+body.sr5cui-roll-buttons #test-dialog-v2 input[type=checkbox]:checked::before {
     line-height: 18px;
 }
 
@@ -214,7 +232,7 @@ body.sr5cui-roll-buttons #test-dialog input[type=checkbox]:checked::before {
 /* -- 2. TEST DIALOG LAYOUT  (body.sr5cui-roll-buttons gate) ---------------- */
 
 /* Floor the dialog width so it never clips its content */
-#test-dialog {
+#test-dialog-v2 {
     min-width: 200px;
 }
 
@@ -229,13 +247,13 @@ body.sr5cui-roll-buttons #test-dialog input[type=checkbox]:checked::before {
 /* - Form-group rows: label shrinks to text; control pushes to the right -
    .modifiable-value also carries .form-group but needs flex-wrap:wrap so its
    breakdown-list (flex-basis:100%) flows onto its own row below, not sideways. */
-body.sr5cui-roll-buttons #test-dialog .form-group:not(.modifiable-value) {
+body.sr5cui-roll-buttons #test-dialog-v2 .form-group:not(.modifiable-value) {
     flex-wrap: nowrap;
     margin-bottom: 6px;
     margin-top: 6px;
     padding-left: 3px;
 }
-body.sr5cui-roll-buttons #test-dialog .form-group > label {
+body.sr5cui-roll-buttons #test-dialog-v2 .form-group > label {
     flex:        0 0 auto;
     width:       auto;
     white-space: nowrap;
@@ -243,70 +261,86 @@ body.sr5cui-roll-buttons #test-dialog .form-group > label {
     font-weight: 300;
 }
 
-body.sr5cui-roll-buttons #test-dialog .form-group.toggle-checkbox-row > label {
+body.sr5cui-roll-buttons #test-dialog-v2 .form-group.toggle-checkbox-row > label {
     margin-left: 32px;
 }
 
-body.sr5cui-colors .sr5.form-dialog .dialog-content-common .common-test {
+/*body.sr5cui-colors .sr5.form-dialog .dialog-content-common .common-test*/
+
+body.sr5cui-colors .sr5v2.form-dialog .common-test .test-code,
+body.sr5cui-colors .sr5v2.form-dialog .common-test .test-code-term {
     border: none;
-    color:  rgb(0, 0, 0);
-    margin: 0;
+    color:  rgb(0, 0, 0) !important;  /* SR5 0.34.2 added .common-test { color: var(--sr5v2-text-primary) } */
+    margin-top: 2px;
     padding: 5px;
     font-weight: 300;
 }
+/* Allow groups (pool / [limit] / (threshold)) to wrap to next line as whole units */
+.sr5v2.form-dialog .common-test .test-code {
+    display:          flex;
+    flex-wrap:        wrap;
+    justify-content:  center;
+    gap:              0.1em 0.4em;
+    align-items:      baseline;
+}
+.sr5v2.form-dialog .common-test .test-code-group {
+    white-space: nowrap;
+}
 
 /* Everything to the right of the label gets margin-left: auto to push it right */
-body.sr5cui-roll-buttons #test-dialog .form-group > input[type="number"],
-body.sr5cui-roll-buttons #test-dialog .form-group > input[type="text"],
-body.sr5cui-roll-buttons #test-dialog .form-group > select,
-body.sr5cui-roll-buttons #test-dialog .form-group > .sr5cui-stepper,
-body.sr5cui-roll-buttons #test-dialog .form-group > input[type="checkbox"],
-body.sr5cui-layout #test-dialog .form-group > input[type="text"],
-body.sr5cui-layout #test-dialog .form-group > select,
-body.sr5cui-layout #test-dialog .form-group > .sr5cui-stepper,
-body.sr5cui-layout #test-dialog .form-group > input[type="checkbox"] {
+body.sr5cui-roll-buttons #test-dialog-v2 .form-group > input[type="number"],
+body.sr5cui-roll-buttons #test-dialog-v2 .form-group > input[type="text"],
+body.sr5cui-roll-buttons #test-dialog-v2 .form-group > select,
+body.sr5cui-roll-buttons #test-dialog-v2 .form-group > .sr5cui-stepper,
+body.sr5cui-roll-buttons #test-dialog-v2 .form-group > input[type="checkbox"],
+body.sr5cui-layout #test-dialog-v2 .form-group > input[type="text"],
+body.sr5cui-layout #test-dialog-v2 .form-group > select,
+body.sr5cui-layout #test-dialog-v2 .form-group > .sr5cui-stepper,
+body.sr5cui-layout #test-dialog-v2 .form-group > input[type="checkbox"] {
     flex:        0 0 auto;
     margin-left: auto;
 }
-body.sr5cui-roll-buttons #test-dialog .form-group > input[type="number"],
-body.sr5cui-roll-buttons #test-dialog .form-group > input[type="text"],
-body.sr5cui-layout #test-dialog .form-group > input[type="text"] {
+body.sr5cui-roll-buttons #test-dialog-v2 .form-group > input[type="number"],
+body.sr5cui-roll-buttons #test-dialog-v2 .form-group > input[type="text"],
+body.sr5cui-layout #test-dialog-v2 .form-group > input[type="text"] {
     width:      4rem;
     text-align: center;
 }
-body.sr5cui-roll-buttons #test-dialog .form-group > select {
+body.sr5cui-roll-buttons #test-dialog-v2 .form-group > select {
     width: 8rem;
     font-size: 10px;
 }
-body.sr5cui-roll-buttons #test-dialog .form-group-element-2 {
+body.sr5cui-roll-buttons #test-dialog-v2 .form-group-element-2 {
     margin-left: 0.5em;
 }
 
 /* - Reset-recoil button - */
-body.sr5cui-roll-buttons #test-dialog #reset-progressive-recoil {
+body.sr5cui-roll-buttons #test-dialog-v2 #reset-progressive-recoil {
     flex:        0 0 auto;
     margin-left: auto;
     width:       4rem;
 }
-body.sr5cui-roll-buttons #test-dialog #reset-progressive-recoil button {
+body.sr5cui-roll-buttons #test-dialog-v2 #reset-progressive-recoil button {
     width:        100%;
     background:   var(--sr5cui-stepper-bg);
     border-color: var(--sr5cui-stepper-border);
 }
-body.sr5cui-roll-buttons #test-dialog #reset-progressive-recoil button:hover {
+body.sr5cui-roll-buttons #test-dialog-v2 #reset-progressive-recoil button:hover {
     background:   var(--sr5cui-stepper-hover-bg);
     box-shadow:   var(--sr5cui-roll-btn-hover-shadow);
 }
 
 /* - Number stepper ( - [value] + ) - */
-body.sr5cui-layout #test-dialog .sr5cui-stepper {
+body.sr5cui-layout #test-dialog-v2 .sr5cui-stepper {
     display:     flex;
     flex:        0 0 auto;
     flex-flow:   row nowrap;
     align-items: center;
     gap:         2px;
+    margin-right: 4px;
 }
-body.sr5cui-layout #test-dialog .sr5cui-stepper input[type="number"] {
+
+body.sr5cui-layout #test-dialog-v2 .sr5cui-stepper input[type="number"] {
     flex:            0 0 auto;
     width:           2.5rem;
     text-align:      center;
@@ -315,19 +349,20 @@ body.sr5cui-layout #test-dialog .sr5cui-stepper input[type="number"] {
     padding:         0;
 }
 /* Kill native spin arrows inside the stepper input */
-body.sr5cui-layout #test-dialog .sr5cui-stepper input[type="number"]::-webkit-inner-spin-button,
-body.sr5cui-layout #test-dialog .sr5cui-stepper input[type="number"]::-webkit-outer-spin-button {
+body.sr5cui-layout #test-dialog-v2 .sr5cui-stepper input[type="number"]::-webkit-inner-spin-button,
+body.sr5cui-layout #test-dialog-v2 .sr5cui-stepper input[type="number"]::-webkit-outer-spin-button {
     -webkit-appearance: none;
     margin: 0;
 }
 
 /* Stepper - buttons - layout (always present, no gate) */
-#test-dialog .sr5cui-stepper-btn {
+#test-dialog-v2 .sr5cui-stepper-btn {
     flex:            0 0 auto;
     width:           22px;
-    height:          22px;
+    height:          22px !important;
+    min-height:      22px !important;  /* foundry2.css button { min-height: var(--button-size)=2em } */
     padding:         0;
-    padding-left:    3px;  /* visual centering: minus is narrower than plus */
+    /*padding-left:    3px;   visual centering: minus is narrower than plus */
     padding-top:     2px;
     display:         flex;
     align-items:     center;
@@ -342,46 +377,46 @@ body.sr5cui-layout #test-dialog .sr5cui-stepper input[type="number"]::-webkit-ou
     box-shadow:      none;
 }
 /* Stepper button hover - Foundry fallback (no scheme gate) */
-#test-dialog .sr5cui-stepper-btn:hover {
+#test-dialog-v2 .sr5cui-stepper-btn:hover {
     background:   var(--button-hover-background-color, var(--color-warm-2, #ffffff2f));
     border-color: var(--button-hover-border-color,     var(--color-light-3, #000));
     color:        var(--button-hover-text-color,        var(--color-light-1, #af048f));
 }
 /* Stepper button colours (scheme gate) */
-body.sr5cui-colors #test-dialog .sr5cui-stepper-btn {
+body.sr5cui-colors #test-dialog-v2 .sr5cui-stepper-btn {
     background:   var(--sr5cui-stepper-bg);
     border-color: var(--sr5cui-stepper-border);
 }
-body.sr5cui-colors #test-dialog .sr5cui-stepper-btn:hover {
+body.sr5cui-colors #test-dialog-v2 .sr5cui-stepper-btn:hover {
     background:   var(--sr5cui-stepper-hover-bg);
     border-color: var(--sr5cui-stepper-hover-border);
 }
 
 /* Ghost stepper: invisible but holds layout space (Pool row) */
-body.sr5cui-layout #test-dialog .sr5cui-stepper--ghost .sr5cui-stepper-btn {
+body.sr5cui-layout #test-dialog-v2 .sr5cui-stepper--ghost .sr5cui-stepper-btn {
     visibility:     hidden;
     pointer-events: none;
 }
 
 /* - Modifiable-value (Pool / Limit breakdown rows) in test-dialog -
    SR5 bundle.css targets light backgrounds; override for the dark dialog. */
-body.sr5cui-colors #test-dialog .modifiable-value {
+body.sr5cui-colors #test-dialog-v2 .modifiable-value {
    /* padding-left: 0px !important;*/
     border-left: none !important;
     padding-left: 3px;
 }
 
-body.sr5cui-colors #test-dialog .modifiable-value > label {
+body.sr5cui-colors #test-dialog-v2 .modifiable-value > label {
     color: var(--sr5cui-input-color, #ffffff) !important;
     font-size: 1em;
 }
 /* Push form-fields (stepper + chevron) to the right, matching the label/control
    alignment of other form-group rows. SR5 bundle.css sets flex:0 0 auto already;
    margin-left:auto does the push. */
-body.sr5cui-layout #test-dialog .modifiable-value .form-fields {
+body.sr5cui-layout #test-dialog-v2 .modifiable-value .form-fields {
     margin-left: auto;
 }
-body.sr5cui-colors #test-dialog .modifiable-value .form-fields input[type=number] {
+body.sr5cui-colors #test-dialog-v2 .modifiable-value .form-fields input[type=number] {
     background:  var(--sr5cui-input-bg, #1a1a1a);
     color:       var(--sr5cui-input-color, #e0e0e0);
     border-color: var(--sr5cui-btn-border, #555);
@@ -389,51 +424,66 @@ body.sr5cui-colors #test-dialog .modifiable-value .form-fields input[type=number
     font-weight: normal;
     cursor:      text;
 }
-body.sr5cui-colors #test-dialog .modifiable-value,
-body.sr5cui-colors #test-dialog .modifiable-value .form-fields .modifier-summary,
-body.sr5cui-colors #test-dialog .modifiable-value .form-fields .modifier-summary .summary-count,
-body.sr5cui-colors #test-dialog .modifiable-value .form-fields .modifier-summary .summary-total {
+/* JS wraps every number input in <div class="sr5cui-stepper">, breaking SR5's
+   direct-child "> input" rule (.dialog-content-common > div > .form-group > input).
+   Restore 25 px height for all stepper-wrapped inputs (Threshold, Pool, Limit). */
+#test-dialog-v2 .sr5cui-stepper input[type=number] {
+    height:     25px !important;
+    min-height: 25px !important;
+}
+body.sr5cui-colors #test-dialog-v2 .modifiable-value,
+body.sr5cui-colors #test-dialog-v2 .modifiable-value .form-fields .modifier-summary {
     background:  none;
     border: none;
-   /* border-color: var(--sr5cui-btn-border, #555);*/
+   /* border-color: var(--sr5cui-btn-border, #555);
     color: var(--sr5cui-input-color, #e0e0e0);
     font-size: 1em;
-    font-weight: 100;
+    font-weight: 100;*/
     margin-top: 3px;
     padding-bottom: 5px;
 }
 
-body.sr5cui-colors #test-dialog .modifiable-value .breakdown-list {
+body.sr5cui-colors #test-dialog-v2 .modifiable-value .form-fields .modifier-summary .summary-count,
+body.sr5cui-colors #test-dialog-v2 .modifiable-value .form-fields .modifier-summary .summary-total {
+    color: var(--sr5cui-input-color, #e0e0e0);
+    font-size: 1em;
+    font-weight: 100;
+}
+
+body.sr5cui-colors #test-dialog-v2 .modifiable-value .breakdown-list {
     background: none;
 }
     
-body.sr5cui-colors #test-dialog .modifiable-value .breakdown-list .breakdown-entry .mod-name,
-body.sr5cui-colors #test-dialog .modifiable-value .breakdown-list .breakdown-entry .mod-value {
+body.sr5cui-colors #test-dialog-v2 .modifiable-value .breakdown-list .breakdown-entry .mod-name,
+body.sr5cui-colors #test-dialog-v2 .modifiable-value .breakdown-list .breakdown-entry .mod-value {
     color: var(--sr5cui-input-color, #ffffff);
     font-weight: 300;
 }
-body.sr5cui-colors #test-dialog .modifiable-value .breakdown-list .breakdown-entry.mod-change-disabled .mod-name {
+body.sr5cui-colors #test-dialog-v2 .modifiable-value .breakdown-list .breakdown-entry.mod-change-disabled .mod-name {
     color: #ffffff;
 }
 
 /* Hide the chevron entirely when there are no modifiers to show */
-#test-dialog .modifiable-value .toggle-breakdown.disabled {
+#test-dialog-v2 .modifiable-value .toggle-breakdown.disabled {
     visibility: hidden;
 }
 /* Hide the chevron when Custom Layout is on - steppers replace the need for it */
-body.sr5cui-layout #test-dialog .modifiable-value .toggle-breakdown {
+body.sr5cui-layout #test-dialog-v2 .modifiable-value .toggle-breakdown {
     display: none;
 }
 
 
-body.sr5cui-colors #test-dialog .modify-roll-section {
-    border-left: none !important;
+body.sr5cui-colors #test-dialog-v2 .modify-roll-section {
+    border-left:  none !important;
+    background:   none !important;   /* clear SR5 gradient (bundle.css ~line 3008) */
     margin-bottom: 6px;
     padding-left: 3px;
-    margin-top: 6px;
+    padding-right: 3px;
+    padding-bottom: 5px;
+    margin-top:   6px;
 }    
 
-body.sr5cui-colors #test-dialog .modify-roll-section .modify-roll-title {
+body.sr5cui-colors #test-dialog-v2 .modify-roll-section .modify-roll-title {
     color:       var(--sr5cui-input-color, #e0e0e0) !important;
     font-weight: 300;
 }
@@ -441,48 +491,75 @@ body.sr5cui-colors #test-dialog .modify-roll-section .modify-roll-title {
 /* Hover background on expand/collapse rows - matches .breakdown-entry:hover and
    .toggle-checkbox-row:hover which SR5 bundle.css already themes at rgba(255,255,255,0.06) */
 
-body.sr5cui-colors #test-dialog .modify-roll-section,
-body.sr5cui-colors #test-dialog .modifiable-value.has-modifiers {
+body.sr5cui-colors #test-dialog-v2 .modify-roll-section,
+body.sr5cui-colors #test-dialog-v2 .modifiable-value.has-modifiers {
     border-bottom: 2px var(--sr5cui-test-row-border, rgba(255,255,255,0.4)) solid;
     box-shadow:    var(--sr5cui-test-row-shadow, rgba(0,0,0,0.5) 0px -8px 15px -5px inset);
 }
 
-body.sr5cui-colors #test-dialog .modifiable-value label {
+body.sr5cui-colors #test-dialog-v2 .modifiable-value label {
     font-weight: 100;
 }
 
-body.sr5cui-colors #test-dialog .modifiable-value.has-modifiers .sr5cui-documents-row.form-group-header:hover,
-body.sr5cui-colors #test-dialog .modify-roll-section .modify-roll-header:hover,
-body.sr5cui-colors #test-dialog .modify-roll-content .form-group.toggle-checkbox-row:hover {
+/* Pool / Limit header row: label left, form-fields right, all vertically centered.
+   Without layout mode .sr5cui-documents-row is display:contents so label and
+   form-fields participate directly in .modifiable-value's flex.  These rules
+   supply the missing flex properties (bundle.css uses > selectors which don't
+   penetrate the wrapper).
+   With layout mode the general body.sr5cui-layout rule gives display:flex but
+   needs an override for alignment and sizing inside modifiable-value. */
+#test-dialog-v2 .modifiable-value {
+    align-items: center; /* explicit — bundle value, ensure nothing overrides */
+}
+#test-dialog-v2 .modifiable-value .sr5cui-documents-row.form-group-header > label {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+#test-dialog-v2 .modifiable-value .sr5cui-documents-row.form-group-header > .form-fields {
+    flex: 0 0 auto;
+    margin-left: auto;
+}
+body.sr5cui-layout #test-dialog-v2 .modifiable-value .sr5cui-documents-row.form-group-header {
+    flex: 1 1 auto;         /* become the stretching flex item of .modifiable-value */
+    width: 100%;
+    align-items: center;    /* override flex-start from the general layout rule */
+    justify-content: space-between;
+    margin-bottom: 0;       /* no extra bottom gap inside modifiable-value */
+}
+
+body.sr5cui-colors #test-dialog-v2 .modifiable-value.has-modifiers .sr5cui-documents-row.form-group-header:hover,
+body.sr5cui-colors #test-dialog-v2 .modify-roll-section .modify-roll-header:hover,
+body.sr5cui-colors #test-dialog-v2 .modify-roll-content .form-group.toggle-checkbox-row:hover {
     background: rgba(255, 255, 255, 0.1);
 }
 
-body.sr5cui-colors #test-dialog .modify-roll-section .modify-roll-header {
+body.sr5cui-colors #test-dialog-v2 .modify-roll-section .modify-roll-header {
     border: none !important;
     padding-top: 6px;
     padding-bottom: 6px;
 }
 
 /* - Dialog buttons bar - */
-body.sr5cui-roll-buttons #test-dialog .dialog-buttons {
+/* ApplicationV2 (0.34.2+): footer is .sheet-footer, not .dialog-buttons */
+body.sr5cui-roll-buttons #test-dialog-v2 .sheet-footer {
     flex-wrap: wrap;
     gap:       3px;
 }
 /* Cancel button wraps to its own full-width row */
-body.sr5cui-roll-buttons #test-dialog .dialog-buttons [data-button="cancel"] {
+body.sr5cui-roll-buttons #test-dialog-v2 .sheet-footer [data-action="cancel"] {
     flex:       1 1 100%;
     transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
 }
 
 /* Cancel colours (scheme gate) */
-body.sr5cui-colors #test-dialog .dialog-buttons [data-button="cancel"] {
+body.sr5cui-colors #test-dialog-v2 .sheet-footer [data-action="cancel"] {
     background:   var(--sr5cui-cancel-bg,    #1a1010);
     border-color: var(--sr5cui-cancel-border, #703030);
     color:        var(--sr5cui-cancel-color,  #e0e0e0);
     box-shadow:   none;
 }
-body.sr5cui-colors #test-dialog .dialog-buttons [data-button="cancel"]:hover,
-body.sr5cui-colors #test-dialog .dialog-buttons [data-button="cancel"]:focus {
+body.sr5cui-colors #test-dialog-v2 .sheet-footer [data-action="cancel"]:hover,
+body.sr5cui-colors #test-dialog-v2 .sheet-footer [data-action="cancel"]:focus {
     background:   var(--sr5cui-cancel-hover-bg,     #2d1515);
     border-color: var(--sr5cui-cancel-hover-border,  #c04040);
     color:        var(--sr5cui-cancel-hover-color,   #ffffff);
@@ -496,11 +573,12 @@ body.sr5cui-colors #test-dialog .dialog-buttons [data-button="cancel"]:focus {
    --sr5cui-btn-hover-shadow - configurable glow (TBD per scheme).
    Hover background = --sr5cui-stepper-hover-bg (same var the stepper buttons use).
    Roll-mode buttons (.sr5cui-roll-btn) are separately configured below.
-   Cancel button keeps its red tint via the higher-specificity #test-dialog rule.
+   Cancel button keeps its red tint via the higher-specificity #test-dialog-v2 rule.
    --------------------------------------------------------------------------- */
 
 /* Resting state - shared background, border, and white text */
-body.sr5cui-colors .sr5.form-dialog .window-content .dialog-buttons button,
+/* ApplicationV2 (0.34.2+): footer buttons are in .sheet-footer, not .dialog-buttons */
+body.sr5cui-colors .sr5.form-dialog .sheet-footer button,
 body.sr5cui-colors .sr5.roll-card .card-content .button,
 body.sr5cui-colors .sr5.chat-card .card-buttons .button {
     background:    var(--sr5cui-btn-bg, var(--sr5cui-roll-btn-bg, #1a1a1a));
@@ -535,16 +613,16 @@ body.sr5cui-colors .sr5.roll-card .glitch-content.result-type--glitch {
 }
 
 /* Focus: suppress auto-focus glow so dialog does not appear pre-hovered */
-body.sr5cui-colors .sr5.form-dialog .window-content .dialog-buttons button:focus {
+body.sr5cui-colors .sr5.form-dialog .sheet-footer button:focus {
     box-shadow: none;
     outline:    none;
 }
 
 /* Hover - unified for all clickable areas in roll/chat cards */
-body.sr5cui-colors .sr5.form-dialog .window-content .dialog-buttons button:hover,
+body.sr5cui-colors .sr5.form-dialog .sheet-footer button:hover,
 body.sr5cui-colors .sr5.roll-card .card-content .button:hover,
 body.sr5cui-colors .sr5.chat-card .card-buttons .button:hover {
-    background: rgb(54 55 56);
+    background: var(--sr5cui-stepper-hover-bg, rgb(54 55 56));
     box-shadow: var(--sr5cui-btn-hover-shadow, 0 0 2px rgba(255, 255, 255, 0.35));
     cursor:     pointer;
 }
@@ -575,8 +653,9 @@ body.sr5cui-colors .sr5.chat-card .glitch-content .glitch.clickable:hover {
 }
 
 /* show-description with no meaningful content: JS in srs5-custom-ui.js strips
-   the clickable/show-description classes and adds sr5cui-no-description. */
-.sr5.chat-card .card-content.sr5cui-no-description {
+   the clickable/show-description classes and adds sr5cui-no-description.
+   Gated behind Custom Layout & Sizes — the stripping itself is also JS-gated. */
+body.sr5cui-layout .sr5.chat-card .card-content.sr5cui-no-description {
     border-top: 1px solid #ffffff67 !important;
     pointer-events: none;
     cursor:         default;
@@ -590,6 +669,8 @@ body.sr5cui-colors .sr5.chat-card .glitch-content .glitch.clickable:hover {
     display:         flex;
     align-items:     center;
     justify-content: center;
+    height:          auto !important;  /* foundry2.css button { height: var(--button-size)=2em } */
+    min-height:      0    !important;  /* foundry2.css button { min-height: var(--button-size)=2em } */
     padding:         4px 0;
     border-radius:   3px;
     font-size:       var(--font-size-20, 13px);
@@ -615,11 +696,11 @@ body.sr5cui-colors .sr5cui-roll-btn:focus {
 }
 
 /* Test common title: lighter font-weight */
-body.sr5cui-roll-buttons #test-dialog .common-test {
+body.sr5cui-roll-buttons #test-dialog-v2 .common-test {
     text-align: center;
     font-weight: 300;
 }
-body.sr5cui-roll-buttons.sr5cui-colors #test-dialog .common-test {
+body.sr5cui-roll-buttons.sr5cui-colors #test-dialog-v2 .common-test {
     border: 1px solid black;
     box-shadow: rgb(53 53 53 / 49%) 0px 3px 6px 3px inset;
     background: var(--sr5cui-horizontal-line);
@@ -634,8 +715,8 @@ body.sr5cui-roll-buttons.sr5cui-colors #test-dialog .common-test {
 */
 body.sr5cui-colors .sr5v2,
 body.sr5cui-colors .sr5v2 .window-content,
-body.sr5cui-colors #test-dialog,
-body.sr5cui-colors #test-dialog .window-content,
+body.sr5cui-colors #test-dialog-v2,
+body.sr5cui-colors #test-dialog-v2 .window-content,
 body.sr5cui-colors .sr5.form-dialog,
 body.sr5cui-colors .sr5.form-dialog .window-content {
    background:        var(--sr5cui-bg-overlay), var(--sr5cui-bg-image) !important;
@@ -650,6 +731,21 @@ body.sr5cui-colors .journal-sheet {
     background:        var(--sr5cui-bg-overlay), var(--sr5cui-bg-image) !important;
     background-size:   auto !important;
     background-repeat: repeat !important;
+}
+
+/* Context menu (nav#context-menu): dark scheme override.
+   The context-menu inherits theme variables from its parent window; in light-
+   themed or un-themed containers it renders with a pale beige / white
+   background.  Override the component-level CSS variables so it matches the
+   module's dark colour scheme whenever sr5cui-colors is active. */
+body.sr5cui-colors #context-menu {
+    --background-color:      var(--sr5cui-header-bg, rgba(20, 20, 30, 0.95));
+    --border-color:          var(--sr5cui-window-border, rgba(255, 255, 255, 0.25));
+    --text-color:            var(--sr5cui-input-color, #e0e0e0);
+    --hover-text-color:      var(--sr5cui-icon-color, #ffffff);
+    --group-separator:       var(--sr5cui-window-border, rgba(255, 255, 255, 0.25));
+    --hover-entry-border:    var(--sr5cui-window-border, rgba(255, 255, 255, 0.25));
+    --hover-entry-background: rgba(255, 255, 255, 0.08);
 }
 
 /* Journal header controls-dropdown: match actor sheet dark theme.
@@ -667,7 +763,7 @@ body.sr5cui-colors .journal-sheet .controls-dropdown .header-control > button:ho
 }
 
 /* Remove the 1px black content border that SR5 bundle.css adds */
-body.sr5cui-colors #test-dialog .window-content,
+body.sr5cui-colors #test-dialog-v2 .window-content,
 body.sr5cui-colors .sr5.form-dialog .window-content {
     border: none !important;
 }
@@ -742,7 +838,7 @@ body.sr5cui-colors .journal-sheet .journal-sidebar .action-buttons button {
     --button-text-color:       var(--sr5cui-btn-color,   #e0e0e0);
 }
 body.sr5cui-colors .journal-sheet .journal-sidebar .action-buttons button:hover {
-    background:  var(--sr5cui-button-hover-bg, rgba(0, 0, 0, 0.6)) !important;
+    background:  var(--sr5cui-btn-hover-bg, var(--sr5cui-stepper-hover-bg, rgba(0, 0, 0, 0.6))) !important;
   /*  color:       rgb(169, 39, 39) !important;*/
     font-weight: bold;
     box-shadow:  var(--sr5cui-btn-hover-shadow, 0 0 2px rgba(255, 255, 255, 0.35));
@@ -750,7 +846,7 @@ body.sr5cui-colors .journal-sheet .journal-sidebar .action-buttons button:hover 
 }
 
 /* - Window header (scheme gate) - */
-body.sr5cui-colors :is(.sr5v2, #test-dialog, .sr5.form-dialog, .journal-sheet) .window-header {
+body.sr5cui-colors :is(.sr5v2, #test-dialog-v2, .sr5.form-dialog, .journal-sheet) .window-header {
     border-bottom: 2px groove var(--color-cool-4, #302831);
     background:    var(--sr5cui-header-bg, rgba(0, 0, 0, 0.9));
 }
@@ -762,10 +858,49 @@ body.sr5cui-colors .sr5v2 {
     outline:    1px solid var(--sr5cui-window-border, rgba(255, 255, 255, 0.25));
     box-shadow: var(--sr5cui-shadow, 0 0 15px 5px rgba(35, 35, 35, 0.7));
 }
-body.sr5cui-colors :is(#test-dialog, .sr5.form-dialog, .journal-sheet) {
+body.sr5cui-colors :is(#test-dialog-v2, .sr5.form-dialog, .journal-sheet) {
     border:     none;
     outline:    1px solid var(--sr5cui-window-border, rgba(255, 255, 255, 0.25));
     box-shadow: var(--sr5cui-shadow, 0 0 15px 5px rgba(35, 35, 35, 0.7));
+}
+
+/* Override SR5 text and icon variables from the active module scheme.
+   body.sr5cui-colors is only present when a non-default scheme is active, so
+   default = SR5 theme left entirely untouched.
+   !important on CSS custom properties beats SR5's own theme rules (light or dark)
+   regardless of specificity, without copying SR5's internal values here. */
+body.sr5cui-colors .sr5v2 {
+    --sr5v2-text-primary:   var(--sr5cui-input-color, #e0e0e0) !important;
+    --sr5v2-text-secondary: var(--sr5cui-input-color, #e0e0e0) !important;
+    --sr5v2-text-muted:     var(--sr5cui-input-color, #e0e0e0) !important;
+    --sr5v2-control-text:   var(--sr5cui-input-color, #e0e0e0) !important;
+    --sr5v2-display-text:   var(--sr5cui-input-color, #e0e0e0) !important;
+    --sr5v2-button-text:    var(--sr5cui-input-color, #e0e0e0) !important;
+    --sr5v2-icon-filter:    invert(1) !important;
+}
+
+/* Bundle.css applies a darkening filter to SVG images inside actor sheets when
+   body.theme-light is active, converting them to near-black for readability on a
+   light background.  With the module's dark scheme this makes them invisible.
+   Override with filter: none using the same selectors as bundle.css line ~5360. */
+body.sr5cui-colors.theme-light .sr5v2:not(.theme-dark) .toggle-fresh-import img[src$=".svg"],
+body.sr5cui-colors.theme-light .sr5v2:not(.theme-dark) .no-shrink img[src$=".svg"],
+body.sr5cui-colors.theme-light .sr5v2:not(.theme-dark) .list-item-image-container img[src$=".svg"],
+body.sr5cui-colors.theme-light .sr5v2:not(.theme-dark) .list-item img[src*="/icons/"][src$=".svg"],
+body.sr5cui-colors .sr5v2.theme-light .toggle-fresh-import img[src$=".svg"],
+body.sr5cui-colors .sr5v2.theme-light .no-shrink img[src$=".svg"],
+body.sr5cui-colors .sr5v2.theme-light .list-item-image-container img[src$=".svg"],
+body.sr5cui-colors .sr5v2.theme-light .list-item img[src*="/icons/"][src$=".svg"] {
+    filter: none;
+}
+
+body.sr5cui-colors .sr5v2 .list-item .list-item-image-container:hover .list-item-image-roll {
+    filter: invert(1) !important;
+}
+
+body.sr5cui-colors .sr5v2 button.sr5-icon:hover {
+    border: solid white 1px !important;
+    box-shadow: 0 0 3px 0px rgba(255, 255, 255, 0.4) !important;
 }
 
 /* Edit mode indicator - SR5 sets .fa-toggle-large-off on the icon when edit mode is ON.
@@ -778,6 +913,10 @@ body.sr5cui-colors .sr5v2:has(.fa-toggle-large-off) .window-header,
 body.sr5cui-colors .sr5v2:has(.fa-toggle-large-off) .list-item.list-item-header.list-item-favorites  {
   /*  border-bottom-color: rgba(200, 60, 60, 0.7) !important;*/
     background: var(--sr5cui-edit-mode-bg) !important;
+}
+
+.sr5v2 button.header-control {
+    background: none;
 }
 
 /* - Custom SVG header icons - */
@@ -800,9 +939,11 @@ body.sr5cui-colors .sr5v2:has(.fa-toggle-large-off) .list-item.list-item-header.
     font-size: 1rem !important;
 }
 
-/* Brighten the icons to make them more visible. */
-.sr5v2 button[data-action="rollSkill"] img{
-filter: brightness(2) contrast(1.5) !important;
+/* Brighten the icons to make them more visible.
+   Gated: only needed under module colour schemes (dark backgrounds).
+   Default scheme + Foundry light theme: icons are already visible. */
+body.sr5cui-colors .sr5v2 button[data-action="rollSkill"] img {
+    filter: brightness(2) contrast(1.5) !important;
 }
 
 /* Size the custom <img> icons. */
@@ -824,11 +965,11 @@ filter: brightness(2) contrast(1.5) !important;
 }
 
 /* Border-radius for header + content (layout gate) */
-body.sr5cui-layout :is(.sr5v2, #test-dialog, .sr5.form-dialog, .journal-sheet) .window-header {
+body.sr5cui-layout :is(.sr5v2, #test-dialog-v2, .sr5.form-dialog, .journal-sheet) .window-header {
     border-top-left-radius:  6px;
     border-top-right-radius: 6px;
 }
-body.sr5cui-layout :is(#test-dialog, .sr5.form-dialog, .journal-sheet) .window-content {
+body.sr5cui-layout :is(#test-dialog-v2, .sr5.form-dialog, .journal-sheet) .window-content {
     border-bottom-left-radius:  6px;
     border-bottom-right-radius: 6px;
 }
@@ -842,9 +983,18 @@ body.sr5cui-layout :is(#test-dialog, .sr5.form-dialog, .journal-sheet) .window-c
 
 /* -- 4. ACCENT, TABS & SCROLLBARS ------------------------------------------ */
 
+/* Clear SR5's dark header gradient so the module's background image shows through.
+   Gated: on default scheme SR5's own header styling should be left untouched,
+   allowing Foundry's light theme to render the header normally. */
+body.sr5cui-colors .sr5v2.actor .sheet-header,
+body.sr5cui-colors .sr5v2.item .sheet-header {
+    background: none;
+}
+
 /* Character name: accent colour fades to transparent */
 body.sr5cui-colors .sr5v2.named-sheet input.sheet-name {
     background: linear-gradient(to right, var(--sr5cui-accent) 30%, transparent 100%);
+    color:      var(--sr5cui-input-color, #e0e0e0);
 }
 
 /* Tab strip bottom border */
@@ -873,8 +1023,8 @@ body.sr5cui-colors .sr5v2 .window-content .tabs a.active {
 }
 
 /* Hover: list rows, roll links, tabs */
-body.sr5cui-colors :is(.sr5v2, #test-dialog) .has-desc:hover,
-body.sr5cui-colors :is(.sr5v2, #test-dialog) .roll:hover {
+body.sr5cui-colors :is(.sr5v2, #test-dialog-v2) .has-desc:hover,
+body.sr5cui-colors :is(.sr5v2, #test-dialog-v2) .roll:hover {
     text-shadow: var(--sr5cui-hover-text-shadow);
     color:       var(--sr5cui-hover-color);
     cursor:      pointer;
@@ -912,13 +1062,28 @@ body.sr5cui-colors .sr5v2.actor .active-skills-header :is(button, label).skill-r
     text-align:    center;
     transition:    background 0.15s, border-color 0.15s;
 }
+/*
+body.sr5cui-colors .sr5v2.actor .active-skills-header:hover {
+    color: inherit !important;
+}*/
 
 /* Rtg button: darken background on hover, keep white text */
 body.sr5cui-colors .sr5v2.actor .active-skills-header :is(button, label).skill-rtg-label:hover {
-    background:  var(--sr5cui-btn-hover-bg, #2d2d2d) !important;
+    background:  var(--sr5cui-btn-hover-bg, var(--sr5cui-stepper-hover-bg, #2d2d2d)) !important;
     box-shadow:  var(--sr5cui-btn-hover-shadow, none) !important;
     color:       #ffffff                             !important;
     text-shadow: none                                !important;
+}
+/* bundle.css '.active-skills-header:hover label { color: var(--sr5v2-link-hover) !important }' darkens
+   skill-rtg-label when cursor enters the parent div (--sr5v2-link-hover is #171d24 in light theme).
+   Two-pronged fix:
+   1. Override the variable so bundle.css's own rule resolves to white.
+   2. Also set color directly in case the variable fix alone is insufficient. */
+body.sr5cui-colors .sr5v2.actor .active-skills-header:hover {
+    --sr5v2-link-hover: #ffffff;
+}
+body.sr5cui-colors .sr5v2.actor .active-skills-header:hover :is(button, label).skill-rtg-label {
+    color: #ffffff !important;
 }
 
 /* Hovered list-item image container */
@@ -943,8 +1108,8 @@ body.sr5cui-colors .sr5v2 label {
     color: var(--sr5cui-label-color, #000000) !important;
 }
 /* All labels inside the test dialog follow the input text colour */
-body.sr5cui-colors #test-dialog label {
-    color: var(--sr5cui-input-color, #e0e0e0);
+body.sr5cui-colors #test-dialog-v2 label {
+    color: var(--sr5cui-input-color, #e0e0e0) !important;  /* beats .sr5v2 label !important above */
 }
 
 /* Sheet footer top separator */
@@ -965,48 +1130,57 @@ body.sr5cui-colors .sr5v2 a[data-action]:hover {
 /* Content / entity links inside test-dialog.
    bundle.css: .sr5 .content-link { color: white !important }
    foundry2.css compat: body.game .app a:hover { text-shadow: orange } - both need !important */
-body.sr5cui-colors #test-dialog a.content-link,
-body.sr5cui-colors #test-dialog a.entity-link {
+
+/* .document row: flex so img and link sit on the same vertical centre (mirrors
+   .sr5.roll-card .card-title .document in bundle.css which already does this) */
+#test-dialog-v2 .document {
+    display:     flex;
+    align-items: center;
+    gap:         0.35rem;
+}
+#test-dialog-v2 .document img {
+    flex: 0 0 auto;
+}
+#test-dialog-v2 .document a {
+    flex:          0 1 auto;
+    min-width:     min-content;
+    white-space:   normal;
+    word-break:    normal;
+    overflow-wrap: break-word;
+}
+/* Grows to fill free space; flex-basis 0 + no shrink → collapses to 0
+   before links start to shrink and wrap their text. */
+#test-dialog-v2 .document .sr5cui-doc-spacer {
+    flex:      1 0 0;
+    min-width: 0;
+}
+
+body.sr5cui-colors #test-dialog-v2 a.content-link,
+body.sr5cui-colors #test-dialog-v2 a.entity-link {
     color: var(--sr5cui-link-color) !important;
 }
-body.sr5cui-colors #test-dialog a.content-link:hover,
-body.sr5cui-colors #test-dialog a.entity-link:hover {
+body.sr5cui-colors #test-dialog-v2 a.content-link:hover,
+body.sr5cui-colors #test-dialog-v2 a.entity-link:hover {
     text-shadow: var(--sr5cui-hover-text-shadow) !important;
     color:       var(--sr5cui-hover-color) !important;
     cursor:      pointer;
 }
 
-/* Font Awesome icon colour - covers all FA variants in all custom windows */
-body.sr5cui-colors .sr5v2 i.fas,
-body.sr5cui-colors .sr5v2 i.far,
-body.sr5cui-colors .sr5v2 i.fab,
-body.sr5cui-colors #test-dialog i.fas,
-body.sr5cui-colors #test-dialog i.far,
-body.sr5cui-colors #test-dialog i.fab,
-body.sr5cui-colors .journal-sheet i.fas,
-body.sr5cui-colors .journal-sheet i.far,
-body.sr5cui-colors .journal-sheet i.fab {
-    color: var(--sr5cui-icon-color);
+/* All <i> icons in actor sheets, test dialog, and journal sheets.
+   Using a bare 'i' selector catches every FA class variant (fas/far/fa-solid/
+   fa-duotone/fa-light/fa-thin/etc.) and any future ones without needing a
+   class list. SR5/Foundry never uses <i> for italic text — that uses <em>. */
+body.sr5cui-colors .sr5v2 i,
+body.sr5cui-colors #test-dialog-v2 i,
+body.sr5cui-colors .journal-sheet i {
+    color: var(--sr5cui-icon-color, #ffffff) !important;
 }
 
-/* Clickable FA icons - hover colour matches hovered text links.
-   Excludes #test-dialog buttons (their background changes on hover instead). */
-body.sr5cui-colors :is(.sr5v2, .journal-sheet) :is(a, button, [data-action]):hover i.fas,
-body.sr5cui-colors :is(.sr5v2, .journal-sheet) :is(a, button, [data-action]):hover i.far,
-body.sr5cui-colors :is(.sr5v2, .journal-sheet) :is(a, button, [data-action]):hover i.fab,
-body.sr5cui-colors :is(.sr5v2, .journal-sheet) :is(a, button, [data-action]):hover i.fa-solid,
-body.sr5cui-colors :is(.sr5v2, .journal-sheet) :is(a, button, [data-action]):hover i.fa-regular,
-body.sr5cui-colors #test-dialog a:hover i.fas,
-body.sr5cui-colors #test-dialog a:hover i.far,
-body.sr5cui-colors #test-dialog a:hover i.fab,
-body.sr5cui-colors #test-dialog a:hover i.fa-solid,
-body.sr5cui-colors #test-dialog a:hover i.fa-regular,
-body.sr5cui-colors #test-dialog [data-action]:not(button):hover i.fas,
-body.sr5cui-colors #test-dialog [data-action]:not(button):hover i.far,
-body.sr5cui-colors #test-dialog [data-action]:not(button):hover i.fab,
-body.sr5cui-colors #test-dialog [data-action]:not(button):hover i.fa-solid,
-body.sr5cui-colors #test-dialog [data-action]:not(button):hover i.fa-regular {
-    color: var(--sr5cui-hover-color) !important;
+/* Icons inside clickable elements on hover — keep same icon colour.
+   The parent element's background already provides hover feedback. */
+body.sr5cui-colors :is(.sr5v2, .journal-sheet) :is(a, button, [data-action]):hover i,
+body.sr5cui-colors #test-dialog-v2 :is(a, button, [data-action]):hover i {
+    color: var(--sr5cui-icon-color, #ffffff) !important;
 }
 
 /* Hint / notes text */
@@ -1036,14 +1210,14 @@ body.sr5cui-colors .sr5v2#tooltip .value-modifiers .list-item.total {
 /* -- 6. LISTS & ITEM ROWS -------------------------------------------------- */
 
 /* Section bars - gold category headers (Weapons, Spells, etc.) */
-body.sr5cui-colors :is(.sr5v2, #test-dialog) :is(.list-header, .list-item).item-section {
+body.sr5cui-colors :is(.sr5v2, #test-dialog-v2) :is(.list-header, .list-item).item-section {
     color:        var(--sr5cui-list-section-color) !important;
     background:   var(--sr5cui-list-section-bg)    !important;
     border-color: var(--sr5cui-list-section-border) !important;
 }
 
 /* Column header rows - thin bar labelling columns above item lists */
-body.sr5cui-colors .sr5v2 .list-item.list-item-header {
+body.sr5cui-colors .sr5v2 .list-item.list-item-header:not(.skill-rtg-label) {
     color:         var(--sr5cui-list-header-color);
     background:    var(--sr5cui-list-header-bg);
     border-bottom: var(--sr5cui-list-header-border);
@@ -1053,7 +1227,7 @@ body.sr5cui-colors .sr5v2 .list-item.list-item-header {
     justify-content: start;
 }
 
-body.sr5cui-colors #test-dialog .list-header:not(.item-section) {
+body.sr5cui-colors #test-dialog-v2 .list-header:not(.item-section) {
     color: var(--sr5cui-list-header-color);
 }
 
@@ -1083,7 +1257,7 @@ body.sr5cui-colors .sr5v2 .list-item.list-item-header.collapsible-header:hover *
 body.sr5cui-colors .sr5v2 .list-item:not(.list-item-header):not(.item-section) {
     color: var(--sr5cui-list-item-color);
 }
-body.sr5cui-colors #test-dialog .list-item:not(.item-section) {
+body.sr5cui-colors #test-dialog-v2 .list-item:not(.item-section) {
     color: var(--sr5cui-list-item-color);
 }
 
@@ -1160,12 +1334,18 @@ body.sr5cui-colors .sr5v2 .attribute-value input {
     max-height: unset;
 }
 
-/* Condition monitor cells: square cells (bundle.css: width 24px, height 18px) */
+/* Condition monitor cells: square cells (bundle.css: width 24px, height 18px)
+   bundle.css:4138 sets background/color via --sr5v2-cell-* vars (dark-theme palette);
+   override with module scheme variables so cells match the active colour scheme. */
 body.sr5cui-colors .sr5v2 .horizontal-cell-input.stun     .cell-container .cell,
 body.sr5cui-colors .sr5v2 .horizontal-cell-input.physical .cell-container .cell,
+body.sr5cui-colors .sr5v2 .horizontal-cell-input.overflow .cell-container .cell,
 body.sr5cui-colors .sr5v2 .horizontal-cell-input.edge     .cell-container .cell,
 body.sr5cui-colors .sr5v2 .horizontal-cell-input.matrix   .cell-container .cell {
-    width: 18px !important;
+    width:        18px !important;
+    background:   var(--sr5cui-attribute-bg,  rgba(0,0,0,0.7)) !important;
+    color:        var(--sr5cui-input-color,   #e0e0e0) !important;
+    border-color: rgba(255,255,255,0.25) !important;
 }
 
 /* Matrix track: filled = green (all locations - Matrix tab actor monitor + list-item-desc items) */
@@ -1228,7 +1408,10 @@ body.sr5cui-colors .sr5v2 .horizontal-cell-input.stun .cell-container .cell.fill
     background:   rgba(85, 112, 185, 0.9) !important;
     border-color: rgba(0, 0, 0, 0.8)      !important;
 }
-body.sr5cui-colors .sr5v2 .horizontal-cell-input.stun .cell-container .cell.filled:hover {
+body.sr5cui-colors .sr5v2 .horizontal-cell-input.stun .cell-container .cell.filled:hover,
+body.sr5cui-colors .sr5v2 .horizontal-cell-input.physical .cell-container .cell.filled:hover,
+body.sr5cui-colors .sr5v2 .horizontal-cell-input.overflow .cell-container .cell.filled:hover,
+body.sr5cui-colors .sr5v2 .horizontal-cell-input.edge .cell-container .cell.filled:hover {
     border-color: rgb(229.5, 229.5, 229.5) !important;
 }
 
@@ -1237,8 +1420,18 @@ body.sr5cui-colors .sr5v2 .horizontal-cell-input.physical .cell-container .cell.
     background:   rgba(216, 78, 78, 0.9) !important;
     border-color: rgba(0, 0, 0, 0.8)      !important;
 }
-body.sr5cui-colors .sr5v2 .horizontal-cell-input.physical .cell-container .cell.filled:hover {
-    border-color: rgb(229.5, 229.5, 229.5) !important;
+
+/* Overflow track: glow = red (same as physical), filled = dark red */
+body.sr5cui-colors .sr5v2 .horizontal-cell-input.overflow .cell-container .cell {
+    box-shadow: 0 0 5px 1px rgba(255, 0, 0, 0.5) !important;
+}
+body.sr5cui-colors .sr5v2 .horizontal-cell-input.overflow .cell-container .cell.filled {
+    background:   rgba(130, 10, 10, 0.95) !important;
+    border-color: rgba(0, 0, 0, 0.8)      !important;
+}
+
+body.sr5cui-colors .sr5v2 .horizontal-cell-input.edge .cell-container .cell.filled {
+    border-color: rgba(0, 0, 0, 0.8)      !important;
 }
 
 /* Value modifier popup (attribute/skill tooltip) */
@@ -1271,6 +1464,24 @@ body.sr5cui-colors .sr5.roll-card .card-description.card-description-content,
 body.sr5cui-colors .sr5.roll-card .dice-rolls,
 body.sr5cui-colors .sr5.roll-card .card-content {
     border-bottom: none;
+    border-left:   none;
+    border-right:  none;
+    border-radius: 0 0 6px 6px;
+}
+
+/* Zero out new bundle.css side + block margins on all card-main-content children.
+   Layout gate: spacing changes only apply with Custom Layout & Sizes ON. */
+body.sr5cui-layout .sr5.roll-card .card-content,
+body.sr5cui-layout .sr5.roll-card .card-description,
+body.sr5cui-layout .sr5.roll-card .card-test-content,
+body.sr5cui-layout .sr5.roll-card .card-buttons,
+body.sr5cui-layout .sr5.roll-card .test-line--targets {
+    margin: 0;
+}
+
+body.sr5cui-layout .sr5.roll-card .card-title.card-header--targets {
+    margin-bottom: 0;
+    padding-bottom: 1px;
 }
 
 /* Black background for all ApplicationV2 windows (foundry2.css:6465) */
@@ -1278,32 +1489,171 @@ body.sr5cui-colors .application.chat-popout .window-content{
     background: #000000;
 }
 
-/* Actor + item header row: lay two container__col blocks side by side (layout gate) */
+/* Actor + item header row: lay two container__row blocks side by side (layout gate)
+   The template wraps each entity in container__row > container__col > document,
+   so container__row is the direct flex child of container--fluid. */
 body.sr5cui-layout .sr5.chat-card .card-header .container--fluid {
-    display:     flex;
-  /*  flex-wrap:   wrap; */
-    gap:         4px;
-    align-items: center;
+    display:        flex;
+    flex-direction: row;
+    gap:            4px;
+    align-items:    center;
 }
-body.sr5cui-layout .sr5.chat-card .card-header .container--fluid > .container__col {
+/* Both sides start equal (50/50); min-content floor prevents word-clipping. */
+body.sr5cui-layout .sr5.chat-card .card-header .container--fluid > .container__row {
     flex:      1 1 0;
-    min-width: 0;
+    min-width: min-content;
+}
+/* Remove the dashed top border between rows when they're side by side */
+body.sr5cui-layout .sr5.roll-card .card-header--entities .container__row + .container__row {
+    padding-top: 0;
+    border-top:  none;
 }
 
-/* Document cells inside chat-card columns: allow text wrapping */
-body.sr5cui-layout .sr5.chat-card .card-header .container--fluid > .container__col .document {
+/* Document cells inside chat-card rows: allow text wrapping */
+body.sr5cui-layout .sr5.chat-card .card-header .container--fluid > .container__row .document {
     overflow:    visible;
     white-space: normal;
     align-items: flex-start;
 }
-body.sr5cui-layout .sr5.chat-card .card-header .container--fluid > .container__col .document img {
+body.sr5cui-layout .sr5.chat-card .card-header .container--fluid > .container__row .document img {
     flex-shrink: 0;
 }
-body.sr5cui-layout .sr5.chat-card .card-header .container--fluid > .container__col .document a,
-body.sr5cui-layout .sr5.chat-card .card-header .container--fluid > .container__col .document h3 {
+body.sr5cui-layout .sr5.chat-card .card-header .container--fluid > .container__row .document a,
+body.sr5cui-layout .sr5.chat-card .card-header .container--fluid > .container__row .document h3 {
+    white-space:   normal;
+    overflow-wrap: break-word;
+    display:       inline;
+}
+
+/* item-card.hbs (show description): .document divs are direct children of
+   .card-title, not wrapped in .container__row, so the rules above don't reach
+   them. Override bundle.css white-space:nowrap / overflow:hidden here.
+   Gated behind Custom Layout & Sizes so bundle.css defaults are preserved
+   when the layout setting is off. */
+body.sr5cui-layout .sr5.chat-card.item-card .card-title .document {
     white-space: normal;
-    word-break:  break-word;
-    display:     inline;
+}
+body.sr5cui-layout .sr5.chat-card.item-card .card-title .header-name {
+    white-space:   normal;
+    overflow:      visible;
+    text-overflow: clip;
+}
+body.sr5cui-layout .sr5.chat-card.item-card .card-title .header-name a {
+    white-space:   normal;
+    overflow-wrap: break-word;
+    word-break:    normal;
+}
+
+/* Entity images: remove bundle.css background and border */
+body.sr5cui-colors .sr5.roll-card .card-header--entities .document img {
+    background: none;
+    border:     none;
+    box-shadow: none;
+}
+
+body.sr5cui-colors .sr5.roll-card .card-header--title .test-name {
+    color: #00000096
+}
+
+/* Re-pin SR5 theme-color variables on the card itself so body.theme-light cannot
+   bleed dark text or light-surface colors in. Covers both the --sr5-card-* chain
+   (--sr5-card-text → --sr5-theme-text-primary etc.) AND direct --sr5-theme-*
+   usages (e.g. .header-name a { color: var(--sr5-theme-text-primary) }).
+   Values are the dark-theme defaults from bundle.css (body, .sr5v2.theme-dark). */
+body.sr5cui-colors .sr5.roll-card {
+    --sr5-theme-text-primary:     #f0ede4;
+    --sr5-theme-text-secondary:   #d7d1c3;
+    --sr5-theme-text-muted:       #b8b0a0;
+    --sr5-theme-label:            #ebb531;
+    --sr5-theme-success:          #7ff0a4;
+    --sr5-theme-failure:          #ff9d9d;
+    --sr5-theme-glitch-a:         #cf4cff;
+    --sr5-theme-glitch-b:         #4ccfcf;
+    --sr5-theme-border:           rgba(215, 209, 195, 0.28);
+    --sr5-theme-accent-glow:      color-mix(in srgb, #ebb531 45%, transparent);
+}
+
+/* card-title / card-header: remove light-theme surface background (bundle.css:1733 var --sr5-card-surface-soft) */
+body.sr5cui-colors .sr5.roll-card .card-title {
+    background: none;
+}
+
+/* all card-content variants: remove light-theme surface background (bundle.css:1829 var --sr5-card-surface) */
+body.sr5cui-colors .sr5.roll-card .card-content {
+    background: none;
+}
+
+/* card-content--code: visual properties only in color-scheme gate */
+body.sr5cui-colors .sr5.roll-card .card-content--code {
+    background: none;
+    border:     none;
+    box-shadow: none;
+}
+/* card-content--code: spacing properties require Custom Layout */
+body.sr5cui-layout .sr5.roll-card .card-content--code {
+    margin:  0;
+    padding: 0 0 4px 0;
+}
+/* Code row: click to expand/collapse the metrics section.
+   Requires Custom Layout templates (card-content--code.sr5cui-code-toggle only
+   exists when Custom Layout is on), so gate CSS behind the same body class. */
+body.sr5cui-layout .sr5.roll-card .card-content--code.sr5cui-code-toggle {
+    cursor: pointer;
+    user-select: none;
+}
+body.sr5cui-layout .sr5.roll-card .card-content--code.sr5cui-code-toggle::after {
+    content: ' \25BE';   /* ▾ — rotates to ▴ when open */
+    opacity: 0.55;
+    display: inline-block;
+    transform-origin: center 55%;
+    font-size: xx-large;
+    margin: -4px;
+}
+body.sr5cui-layout .sr5.roll-card .card-content--code.sr5cui-code-toggle.sr5cui-metrics-open::after {
+    transform: rotate(180deg);
+}
+/* Metrics panel: smooth expand / collapse (layout-gated, same reason) */
+body.sr5cui-layout .sr5.roll-card .card-content--metrics {
+    overflow:   hidden;
+    max-height: 600px;
+    transition: max-height 0.25s ease-in-out;
+}
+body.sr5cui-layout .sr5.roll-card .card-content--metrics.sr5cui-metrics-hidden {
+    max-height: 1px;
+    padding: 0;
+}
+/* Dice roll panel (Custom Layout active): replace SR5's jQuery slideUp/slideDown with
+   equal-speed CSS transition.  Only applied when Custom Layout & Sizes is ON so that
+   without it SR5's native jQuery expand/collapse runs unimpeded (no max-height constraint).
+   display is managed by JS (block on expand, none after collapse) so the element stays
+   fully out of layout when collapsed — identical to SR5's original display:none state.
+   Direction of expansion (downward without layout, upward with layout) is determined by
+   the card's flex-direction set elsewhere in the sr5cui-layout rules. */
+body.sr5cui-layout .sr5.roll-card .card-rolls {
+    overflow:       hidden;
+    max-height:     0;
+    transition:     max-height 0.25s ease-in-out;
+    margin:         0;
+    padding-bottom: 0;
+}
+body.sr5cui-layout .sr5.roll-card .card-rolls.sr5cui-rolls-visible {
+    max-height: 600px;
+}
+body.sr5cui-layout .sr5.roll-card .card-rolls.sr5cui-rolls-visible .dice-rolls {
+    display: flex !important;
+}
+
+/* card-header--entities padding: layout-affecting — requires layout gate */
+body.sr5cui-layout .sr5.roll-card .card-header--entities {
+    padding: 0 0.45rem;
+}
+
+/* card-rolls: visual properties only in color-scheme gate */
+body.sr5cui-colors .sr5.roll-card .card-rolls {
+    background:    none;
+    border:        none;
+    border-radius: 0;
+    box-shadow:    none;
 }
 
 /* Test-dialog documents row: two div.document siblings side by side (layout gate) */
@@ -1421,17 +1771,24 @@ body.sr5cui-colors .chat-message {
     background-repeat: repeat, no-repeat !important;
     color:      rgba(255, 255, 255, 0.8);
     border: 4px solid #343434 !important;
-    border-radius: 8px;
+    border-radius: 10px;  /* top corners square, bottom corners rounded */
     padding: 0px !important; /*0px 5px 0px !important;*/
 }
 
+/* Visual properties (border, background) — color-scheme gate */
 body.sr5cui-colors .sr5.chat-card,
 body.sr5cui-colors .sr5.roll-card {
-    margin: 0px;
-    padding-left: 4px;
-    padding-right: 4px;
+    border-radius: 0 0 6px 6px;
+    border: none;
   /*  background:        var(--sr5cui-card-overlay) !important; */
     background:        var(--sr5cui-card-overlay), var(--sr5cui-card-image) !important;
+}
+/* Spacing (margin, side padding) — layout gate */
+body.sr5cui-layout .sr5.chat-card,
+body.sr5cui-layout .sr5.roll-card {
+    margin:        0;
+    padding-left:  4px;
+    padding-right: 4px;
 }
 
 body.sr5cui-colors .sr5.chat-card.sr5cui-mode-publicroll {
@@ -1451,8 +1808,8 @@ body.sr5cui-colors .sr5.chat-card.sr5cui-mode-selfroll {
 }
 
 body.sr5cui-colors .message-content {
-    border-bottom-left-radius: 4px;
-    border-bottom-right-radius: 4px;
+    border-bottom-left-radius: 6px;  /* match outer .chat-message */
+    border-bottom-right-radius: 6px;
 }
 
 body.sr5cui-colors .message-content .chat-message.whisper ,
@@ -1465,8 +1822,8 @@ body.sr5cui-colors .message-header {
     color: rgb(0, 0, 0);
     padding-left: 4px;
     padding-right: 4px;
-    border-top-left-radius: 4px;
-    border-top-right-radius: 4px;
+    border-radius: 6px 6px 0 0;
+    border: none;
 }
 body.sr5cui-colors .chat-message.whisper .message-header,
 body.sr5cui-colors .chat-message.blind .message-header {
@@ -1474,13 +1831,13 @@ body.sr5cui-colors .chat-message.blind .message-header {
     color: rgba(255, 255, 255, 0.5);
 }
 
-body.sr5cui-colors .sr5.roll-card .card-test-content,
-body.sr5cui-colors .sr5.roll-card .card-content .test-value {
+body.sr5cui-layout .sr5.roll-card .card-test-content,
+body.sr5cui-layout .sr5.roll-card .card-content .test-value {
 /*padding-top: 5px;*/
     padding-bottom: 4px;
 }
 
-body.sr5cui-colors .sr5.roll-card .card-content .test-value {
+body.sr5cui-layout .sr5.roll-card .card-content .test-value {
     padding-top: 5px;
 }
 
@@ -1498,8 +1855,9 @@ body.sr5cui-colors .sr5.roll-card .card-content .value {
 }
 
 /* card-content.can-wrap: bundle.css sets flex-shrink:0 on both sides so they cannot
-   squeeze to fit - prevent them wrapping onto separate rows instead. */
-.sr5.roll-card .card-content.can-wrap {
+   squeeze to fit - prevent them wrapping onto separate rows instead.
+   Gated behind Custom Layout & Sizes to avoid interfering with default layout. */
+body.sr5cui-layout .sr5.roll-card .card-content.can-wrap {
     flex-wrap: nowrap;
 }
 
@@ -1551,15 +1909,49 @@ body.sr5cui-colors .chat-message:has(.sr5.chat-card.sr5cui-mode-blindroll)  .sr5
 body.sr5cui-colors .chat-message:has(.sr5.chat-card.sr5cui-mode-selfroll)   .sr5cui-roll-icon { color: var(--sr5cui-card-self-accent,   rgba(255, 165,   0, 0.9)); }
 body.sr5cui-colors .chat-message:has(.sr5.chat-card.sr5cui-mode-publicroll) .sr5cui-roll-icon { color: var(--sr5cui-card-public-accent, inherit); }
 
-/* Dice hint icon appended to clickable show-roll glitch labels */
+/* Dice hint icon appended to clickable show-roll glitch labels.
+   Hidden when Custom Layout is off — the show-roll click handler (setupShowRollToggle)
+   is layout-gated, so the icon would be decorative/misleading without it. */
 .sr5.roll-card .sr5cui-show-roll-icon {
+    display: none;
+}
+body.sr5cui-layout .sr5.roll-card .sr5cui-show-roll-icon {
+    display:        inline;
     font-size:      1em;
-    color: white;
+    color:          white;
     margin-left:    0.3em;
     opacity:        0.6;
     pointer-events: none;
 }
 
+
+/* Test dialog grows to fit content — no vertical scrollbar.
+   SR5 bundle.css sets [data-application-part=content] { overflow-y: auto; flex: 1 1 auto; min-height: 0 }
+   which clips content when the JS-frozen pixel height is smaller than the content.
+   Override: let the application height be fit-content; clear overflow on the
+   content part and its parent so no clipping / scroll occurs. */
+#test-dialog-v2 {
+    height: fit-content !important;
+}
+#test-dialog-v2 .window-content {
+    overflow: visible !important;
+}
+#test-dialog-v2 [data-application-part=content] {
+    overflow:   visible !important;
+    flex:       0 0 auto !important; /* don't shrink; grow with content */
+    min-height: 0 !important;
+}
+
+/* bundle.css ~2472: .application.sr5v2.form-dialog .dialog-content-common .document gets
+   background: var(--sr5v2-app-header-bg) which is dark regardless of theme.
+   Always clear the background so it doesn't bleed onto a light theme.
+   Colour override is gated: on default scheme SR5/Foundry handles the text colour. */
+#test-dialog-v2 .document {
+    background: none !important;
+}
+body.sr5cui-colors #test-dialog-v2 .document {
+    color: var(--sr5cui-input-color, #e0e0e0); /* override SR5 var(--sr5v2-text-primary) */
+}
 
 /* -- bundle.css:4758 override -- item property pills -----------------------
    Removes the right/bottom borders and adds border-radius for a pill look. */
