@@ -33,9 +33,9 @@
 
 /* Non-rtg labels in any skill header: class sr5cui-static-label locks color
    regardless of hover state - no specificity battle needed. */
-.sr5cui-static-label {
-    color:       var(--sr5cui-static-label-color, #000000) !important;
-    text-shadow: var(--sr5cui-text-shadow, none) !important;
+body.sr5cui-colors .sr5cui-static-label {
+  color: var(--sr5cui-static-label-color, #444444) !important;
+  text-shadow: var(--sr5cui-text-shadow, none) !important;
 }
 
 /* Keep roll-mode buttons horizontal when the sidebar is closed.
@@ -52,12 +52,13 @@
    ensures the die button is always prepended as the first child even on re-renders
    (sidebar toggle), so :not(:first-child) reliably matches all roll-mode buttons.
    Covers sidebar + popped-out / notification-mode chat windows. */
-body.sr5cui-hide-roll-privacy #roll-privacy button:not(:first-child) {
+/* body.sr5cui-hide-roll-privacy #roll-privacy button:not(:first-child) {
     display: none !important;
 }
 body.sr5cui-hide-roll-privacy #roll-privacy button:first-child {
-    border-radius: 4px;  /* Round all edges of the solo die button */
+    border-radius: 4px;  
 }
+*/
 
 /* -- Chat controls button styling -------------------------------------------
    Applies to roll-mode buttons in #roll-privacy and GM buttons in
@@ -106,7 +107,7 @@ body.sr5cui-colors :is(.sr5v2, #test-dialog-v2) input.disabled-for-display[name]
     color:      var(--sr5cui-input-color, #e0e0e0);
 }
 
-body.sr5cui-colors .sr5v2 button[data-action="rollInitiative"],
+body.sr5cui-colors .sr5v2 button [data-action="rollInitiative"],
 body.sr5cui-colors .sr5v2.form-dialog .window-content input:disabled {
     background-color: rgba(1, 1, 1, 0.28) !important;
     color: var(--sr5cui-input-color, #e0e0e0);
@@ -915,7 +916,7 @@ body.sr5cui-colors .sr5v2:has(.fa-toggle-large-off) .list-item.list-item-header.
     background: var(--sr5cui-edit-mode-bg) !important;
 }
 
-.sr5v2 button.header-control {
+body.sr5cui-colors .sr5v2 button.header-control {
     background: none;
 }
 
@@ -932,11 +933,18 @@ body.sr5cui-colors .sr5v2:has(.fa-toggle-large-off) .list-item.list-item-header.
    Foundry sets --button-size:1.5rem on .header-control and uses it as both
    flex-basis and width on .icon, so overriding just width loses to flex-basis.
    Setting --button-size and flex directly wins without specificity fights. */
-.sr5v2 button[data-action="toggleEditMode"] {
+body.sr5cui-colors .sr5v2 button[data-action="toggleEditMode"] {
     --button-size: 28px !important;
     flex:      0 0 28px !important;
     width:     28px !important;
     font-size: 1rem !important;
+}
+
+body.sr5cui-colors .sr5v2 button,
+body.sr5cui-colors .sr5v2 button.display,
+body.sr5cui-colors .editor-menu button {
+    background: var(--sr5cui-btn-bg) !important;
+    border:     1px solid var(--sr5cui-btn-border) !important;
 }
 
 /* Brighten the icons to make them more visible.
@@ -947,20 +955,20 @@ body.sr5cui-colors .sr5v2 button[data-action="rollSkill"] img {
 }
 
 /* Size the custom <img> icons. */
-.sr5v2 button[data-action="toggleEditMode"] .sr5cui-edit-toggle-img,
-.sr5v2 .sr5cui-wrench-btn .sr5cui-wrench-img {
+body.sr5cui-colors .sr5v2 button[data-action="toggleEditMode"] .sr5cui-edit-toggle-img,
+body.sr5cui-colors .sr5v2 .sr5cui-wrench-btn .sr5cui-wrench-img {
     width:          auto;
     height:         18px;
     display:        block;
     pointer-events: none;
 }
 /* Static wrench: visually non-interactive */
-.sr5v2 .sr5cui-wrench-btn {
+body.sr5cui-colors .sr5v2 .sr5cui-wrench-btn {
     pointer-events: none;
     cursor:         default;
 }
 /* Blue glow on hover over the edit toggle */
-.sr5v2 button[data-action="toggleEditMode"]:hover .sr5cui-edit-toggle-img {
+body.sr5cui-colors .sr5v2 button[data-action="toggleEditMode"]:hover .sr5cui-edit-toggle-img {
     filter: drop-shadow(0 0 4px rgba(80, 160, 255, 0.95)) brightness(1.15);
 }
 
@@ -1450,6 +1458,17 @@ body.sr5cui-colors .sr5v2 .value .value-modifiers {
 
 /* -- 9. CHAT & ROLL CARDS -------------------------------------------------- */
 
+
+/* keep chat-input in lower height when it is inactive */
+body.sr5cui-colors .chat-sidebar .chat-input {
+    flex: 0 0 calc(var(--chat-input-height)) !important;
+}
+
+body.sr5cui-colors .sr5.roll-card.initiative-summary-card .initiative-total {
+    background: var(--sr5cui-initiative-bg, #2d2d2d);
+    color:      var(--sr5cui-initiative-color, #ffffff);
+}
+
 /* First card header: black border + text (bundle.css default override) */
 body.sr5cui-colors .sr5.chat-card .card-header:first-of-type {
    /* color:        #4b4b4b; */
@@ -1600,14 +1619,15 @@ body.sr5cui-layout .sr5.roll-card .card-content--code {
 body.sr5cui-layout .sr5.roll-card .card-content--code.sr5cui-code-toggle {
     cursor: pointer;
     user-select: none;
+    height: 28px;
 }
 body.sr5cui-layout .sr5.roll-card .card-content--code.sr5cui-code-toggle::after {
     content: ' \25BE';   /* ▾ — rotates to ▴ when open */
     opacity: 0.55;
     display: inline-block;
-    transform-origin: center 55%;
-    font-size: xx-large;
-    margin: -4px;
+    transform-origin: center 50%;
+    font-size: x-large;
+    margin: -2px;
 }
 body.sr5cui-layout .sr5.roll-card .card-content--code.sr5cui-code-toggle.sr5cui-metrics-open::after {
     transform: rotate(180deg);
@@ -1715,7 +1735,7 @@ body.sr5cui-layout .chat-message .dice-roll .dice-total {
 }
 body.sr5cui-colors .chat-message .dice-roll .dice-formula:hover,
 body.sr5cui-colors .chat-message .dice-roll .dice-total:hover {
-    background: var(--sr5cui-stepper-hover-bg, rgba(0, 0, 0, 0.6));
+    background: rgba(0, 0, 0, 0.2); /* var(--sr5cui-stepper-hover-bg, rgba(0, 0, 0, 0.6)); */
     box-shadow: var(--sr5cui-btn-hover-shadow, 0 0 4px rgba(255, 255, 255, 0.35));
     cursor:     pointer;
 }
@@ -1985,6 +2005,34 @@ border-right: none;
 padding-right: 0;
     }
 
+.chat-message[data-sr5cui-collapsible="1"] .message-header {
+    cursor: pointer;
+}
+
+.chat-message[data-sr5cui-collapsible="1"] .message-header .message-metadata {
+    white-space: nowrap;
+}
+
+.chat-message[data-sr5cui-collapsible="1"] .message-header .message-metadata::before {
+    content: '\25B4';
+    color: #fff;
+    opacity: 0.55;
+    /* margin-right: 0.35rem; */
+    font-size: x-large;
+    /* line-height: 0.7; */
+    vertical-align: middle;
+}
+
+.chat-message[data-sr5cui-collapsible="1"].sr5cui-initiative-collapsed .message-header .message-metadata::before,
+.chat-message[data-sr5cui-collapsible="1"].sr5cui-normal-collapsed .message-header .message-metadata::before {
+    content: '\25BE';
+}
+
+.chat-message[data-sr5cui-collapsible="1"].sr5cui-initiative-collapsed .message-header,
+.chat-message[data-sr5cui-collapsible="1"].sr5cui-normal-collapsed .message-header {
+    opacity: 0.85;
+}
+
     body.sr5cui-layout .sr5.chat-card.sr5cui-mode-blindroll .card-description span,
     body.sr5cui-layout .sr5.chat-card.sr5cui-mode-selfroll .card-description span {
     color: rgba(255, 255, 255, 0.6);
@@ -1993,4 +2041,8 @@ padding-right: 0;
     body.sr5cui-layout .sr5.chat-card .card-description .card-description-content {
         border-bottom: none;
         margin-bottom: 8px;
+        }
+
+        body.sr5cui-layout .sr5.roll-card.initiative-summary-card.initiative-mode-change-card .initiative-mode-transition {
+            background:  rgba(71, 71, 71, 0.84);
         }
