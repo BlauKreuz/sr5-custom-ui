@@ -1,0 +1,12 @@
+{{!-- Override of: systems/shadowrun5e/dist/templates/v2/actor/E:/Foundry/V13/data/Data/modules/sr5-custom-ui/templates/actor/parts/limits.hbs
+     Edit this file to customise the actor sheet layout. It shadows the SR5 system template. --}}
+{{!-- Expected to be put in a row --}}
+<div class="list-item list-item-header">
+    {{#each system.limits as |limit id|}} {{#unless limit.hidden}}
+        <div class="list-item-col">
+            <label data-limit-modifier-tooltip="{{id}}">
+                {{localize limit.label}}&nbsp;{{limit.value}}
+            </label>
+        </div>
+    {{/unless}} {{/each}}
+</div>
