@@ -127,7 +127,7 @@ function applyAll() {
   applyScheme(game.settings.get(ID, 'colorScheme'));
   applyToggle('useCustomLayout', 'sr5cui-layout');
   applyToggle('useRollButtons', 'sr5cui-roll-buttons');
-  applyToggle('hideRollPrivacy', 'sr5cui-hide-roll-privacy');
+/*  applyToggle('hideRollPrivacy', 'sr5cui-hide-roll-privacy'); */
   applyToggle('disableSrTooltips', 'sr5cui-no-tooltips');
 }
 
@@ -169,7 +169,7 @@ export function registerSettings() {
       if (!v) game.settings.set(ID, 'hideRollPrivacy', false);
     },
   });
-
+/*
   game.settings.register(ID, 'hideRollPrivacy', {
     name: '.....Hide Redundant Roll-Mode Selectors',
     hint: ' ',
@@ -179,11 +179,11 @@ export function registerSettings() {
     default: false,
     onChange: () => applyToggle('hideRollPrivacy', 'sr5cui-hide-roll-privacy'),
   });
-  
+ */ 
   game.settings.register(ID, 'diceAccordion', {
-    name: 'Dice Visibility in Roll Cards',
-    hint: 'When enabled, test cards and roll messages show their dice immediately. ' +
-          'New messages collapse previous dice.',
+    name: 'Chat & Roll Card Behaviour',
+    hint: 'When enabled, roll cards show their dice immediately. ' +
+          'New message collapses previous dice and description sections.',
     scope: 'client',
     config: true,
     type: Boolean,
@@ -192,7 +192,7 @@ export function registerSettings() {
 
   game.settings.register(ID, 'disableSrTooltips', {
     name: 'Disable SR5 Tooltips',
-    hint: 'Hide the SR5 value-modifier tooltips that appear when hovering over attributes and other values.',
+    hint: 'Hide the SR5 value-modifier tooltips which appear when hovering over attributes and other values.',
     scope: 'client',
     config: true,
     type: Boolean,
