@@ -1,31 +1,34 @@
 {
     "id": "sr5-custom-ui",
     "title": "SR5 Custom UI",
-    "description": "UI customizations for the Shadowrun 5e system.",
+    "description": "UI customizations for the Shadowrun 5e system. Minimum version 0.36.2",
     "authors": [{"name": "Kurko"}],
-    "version": "2.0",
+    "version": "2.1",
     "compatibility": {
         "minimum": "14",
         "verified": "14"
     },
-"url": "https://github.com/BlauKreuz/sr5-custom-ui",
-  "manifest": "https://github.com/BlauKreuz/sr5-custom-ui/releases/download/v2.0/module.json",
-  "download": "https://github.com/BlauKreuz/sr5-custom-ui/releases/download/v2.0/sr5-custom-ui-v2.0.zip",
-
-    "esmodules": [
-	"script/srs5-custom-ui.js",
-	"script/settings.js",
-	"script/color-schemes.js"
-    ],
-    "styles": ["style/sr5-custom-ui.css"],
-
+  "url": "https://github.com/BlauKreuz/sr5-custom-ui",
+  "manifest": "https://github.com/BlauKreuz/sr5-custom-ui/releases/download/v2.1/module.json",
+  "download": "https://github.com/BlauKreuz/sr5-custom-ui/releases/download/v2.1/sr5-custom-ui-v2.1.zip",
+  "esmodules": [
+    "script/sr5-custom-ui.js",
+    "script/settings.js",
+    "script/color-schemes.js"
+  ],
+  "styles": [
+    "style/sr5-custom-ui.css"
+  ],
   "relationships": {
-	"requires": [
-	{
-	"id": "shadowrun5e",
-	"type": "system",
-	"manifest": "https://raw.githubusercontent.com/SR5-FoundryVTT/SR5-FoundryVTT/master/system.json"
-	}
-	]
+    "requires": [
+      {
+        "id": "shadowrun5e",
+        "type": "system",
+        "manifest": "https://raw.githubusercontent.com/SR5-FoundryVTT/SR5-FoundryVTT/master/system.json",
+        "compatibility": {
+          "minimum": "0.36.2"
+        }
+      }
+    ]
   }
 }
