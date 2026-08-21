@@ -352,11 +352,6 @@ Hooks.on('renderChatInput', (_app, elements) => {
     const rollPrivacy = elements['#roll-privacy'] ?? document.getElementById('roll-privacy');
     if (!rollPrivacy) return;
 
-    // V14 adds class="vertical" to #roll-privacy in notification mode (sidebar closed),
-    // which Foundry's CSS uses to stack the buttons in a column.  Remove it so the
-    // buttons always stay in a horizontal row, matching the sidebar-open layout.
-    rollPrivacy.classList.remove('vertical');
-
     // Check THIS container only — not document.getElementById, which finds the OLD
     // sidebar's button while it is still in the DOM during a re-render cycle, causing
     // the guard to fire too early and leaving the new #roll-privacy without the button.
