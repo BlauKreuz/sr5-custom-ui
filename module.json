@@ -3,14 +3,14 @@
     "title": "SR5 Custom UI",
     "description": "UI customizations for the Shadowrun 5e system. Minimum version 0.36.2",
     "authors": [{"name": "Kurko"}],
-    "version": "2.1",
+    "version": "2.2",
     "compatibility": {
         "minimum": "14",
         "verified": "14"
     },
   "url": "https://github.com/BlauKreuz/sr5-custom-ui",
-  "manifest": "https://github.com/BlauKreuz/sr5-custom-ui/releases/download/v2.1/module.json",
-  "download": "https://github.com/BlauKreuz/sr5-custom-ui/releases/download/v2.1/sr5-custom-ui-v2.1.zip",
+  "manifest": "https://github.com/BlauKreuz/sr5-custom-ui/releases/download/v2.2/module.json",
+  "download": "https://github.com/BlauKreuz/sr5-custom-ui/releases/download/v2.2/sr5-custom-ui-v2.2.zip",
   "esmodules": [
     "script/sr5-custom-ui.js",
     "script/settings.js",
@@ -32,3 +32,4 @@
     ]
   }
 }
+
