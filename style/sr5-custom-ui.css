@@ -1441,6 +1441,9 @@ body.sr5cui-colors .sr5v2 .value .value-modifiers {
     padding:    0.5em;
 }
 
+body.sr5cui-colors .sr5v2 button:disabled, .sr5v2 button.display:disabled {
+    color:  #999 !important;
+}
 
 /* Hide the "Actions" label in the Actions tab header — it's redundant with the tab itself */
 .sr5v2 [data-tab="actions"] .list-item.list-item-header.header-for-scrollable .list-item-start > label {
