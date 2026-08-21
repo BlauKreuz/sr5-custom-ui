@@ -38,15 +38,6 @@ body.sr5cui-colors .sr5cui-static-label {
   text-shadow: var(--sr5cui-text-shadow, none) !important;
 }
 
-/* Keep roll-mode buttons horizontal when the sidebar is closed.
-   V14 adds class="vertical" to #roll-privacy in notification mode, which
-   Foundry's CSS uses to stack buttons in a column.  The renderChatInput hook
-   removes that class, but this rule provides a CSS-level fallback. */
-#roll-privacy.vertical {
-    flex-direction: row !important;
-    flex-wrap: wrap !important;
-}
-
 /* Hide #roll-privacy mode-selector buttons (2nd-5th) while keeping the
    SR5 die button (1st, injected by renderChatInput).  The renderChatInput hook
    ensures the die button is always prepended as the first child even on re-renders
