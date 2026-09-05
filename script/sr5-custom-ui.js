@@ -19,6 +19,25 @@ const ROLL_MODE_ICONS = {
 const ROLL_MODE_ORDER = ['publicroll', 'gmroll', 'blindroll', 'selfroll'];
 
 // ============================================================
+// Safety patch: SR5 0.37.1 can pass a rollMode into ChatMessage.applyMode
+// that isn't a key of CONFIG.ChatMessage.rollModes (e.g. item rolls that
+// skip the dialog), crashing on "Cannot read properties of undefined
+// (reading 'handler')". Fall back to the core default roll mode instead.
+// ============================================================
+function patchChatMessageApplyMode() {
+    if (ChatMessage.applyMode.__sr5cuiPatched) return;
+    const original = ChatMessage.applyMode.bind(ChatMessage);
+    const patched = function (chatData, rollMode, ...rest) {
+        if (!CONFIG.ChatMessage?.rollModes?.[rollMode]) {
+            rollMode = game.settings.get('core', 'rollMode');
+        }
+        return original(chatData, rollMode, ...rest);
+    };
+    patched.__sr5cuiPatched = true;
+    ChatMessage.applyMode = patched;
+}
+
+// ============================================================
 // Template overrides
 // ============================================================
 // Fetches a .hbs file from this module's templates/ folder and
@@ -38,6 +57,8 @@ async function registerTemplateOverride(systemPath, moduleFile) {
 // Module settings + template overrides  (both run on 'init')
 // ============================================================
 Hooks.on('init', async () => {
+    patchChatMessageApplyMode();
+
     // ── Module settings (color scheme, layout, roll buttons toggles) ──
     registerSettings();
 
@@ -65,6 +86,17 @@ Hooks.on('init', async () => {
         type: Number,
         default: 5,
         range: { min: 0, max: 10, step: 1 },
+    });
+
+    // ── Setting: hide offline matrix rows from players ────────
+    game.settings.register('sr5-custom-ui', 'hideMatrixOfflineRows', {
+        name: 'Hide Offline Matrix Icons From Players',
+        hint: 'When enabled, network icon rows marked "Offline" on the Matrix tab are hidden from non-GM users.',
+        scope: 'world',
+        config: true,
+        type: Boolean,
+        default: true,
+        onChange: () => _applyMatrixOfflineVisibility(),
     });
 
     // Template overrides are registered in the 'ready' hook below.
@@ -119,6 +151,8 @@ Hooks.on('ready', async () => {
         // Damage partials inside test message
         [`${SR5}/rolls/parts/DamagePair.hbs`,                           'rolls/parts/DamagePair.hbs'],
         [`${SR5}/rolls/parts/Damage.hbs`,                               'rolls/parts/Damage.hbs'],
+        // Adds data-network to each network icon row so it can be targeted for GM-only visibility.
+        [`${SR5}/v2/list-items/network_icon/item.hbs`,                  'list-items/network_icon/item.hbs'],
     ];
 
     // ── Custom Roll Buttons OR Custom Layout ───────────────────────────────────
@@ -392,6 +426,11 @@ Hooks.on('renderChatMessage', (message, html, _data) => {
 
 
 Hooks.on('renderTestDialog', (app, html, _data) => {
+    // SR5 0.36+ assigns a per-instance window id ("test-dialog-<id>") instead of the
+    // previous static "test-dialog-v2", which breaks every #test-dialog-v2 CSS rule
+    // (layout, roll-mode buttons, steppers). Restore the static id so that CSS still applies.
+    html.id = 'test-dialog-v2';
+
     const useRollBtns = game.settings.get('sr5-custom-ui', 'useRollButtons');
     const useSteppers = game.settings.get('sr5-custom-ui', 'useCustomLayout');
 
@@ -1100,7 +1139,101 @@ function _applyCustomHeaderIcons(app, element) {
 
 Hooks.on('renderApplicationV2', (app, element) => {
     _applyCustomHeaderIcons(app, element);
+    _applyMatrixOfflineVisibility(element);
 });
+
+// ─── Hide network icon rows with no network (i.e. "Offline") from players ───
+// Toggled via the hideMatrixOfflineRows setting; scope defaults to any open
+// .sr5v2 sheet(s) when called from the setting's onChange (no reload needed).
+//
+function _actorIsConnectedToNetwork(sheetRoot) {
+    // Haetaan teksti suoraan split-containerin sisällä olevasta list-item-headerin labelista
+    const statusLabel = sheetRoot.querySelector('.split-container .list-item-header .list-item-start label');
+    
+    if (statusLabel) {
+        // Trimmataan turhat välilyönnit ja rivinvaihdot pois tekstin ympäriltä
+        const text = statusLabel.textContent?.trim() || "";
+        
+        // Jos teksti on tarkalleen "No Network", hahmo on takuulla OFFLINE
+        if (text === "No Network" || text.includes("No Network")) {
+            return false;
+        }
+        
+        // Jos teksti on jotain muuta (esim. "Connected To: Telia"), hahmo on ONLINE
+        if (text.length > 0) {
+            return true;
+        }
+    }
+
+    // Varmuuskopio/Kiertotie: jos jostain syystä labelia ei löytyisi, 
+    // mutta tiedetään että No Network -teksti leijuu jossain tuon headerin sisällä
+    const backupHeader = sheetRoot.querySelector('.split-container .list-item-header');
+    if (backupHeader && backupHeader.textContent?.includes("No Network")) {
+        return false;
+    }
+
+    // Jos mitään ei löytynyt, oletetaan turvallisuussyistä offline
+    return false;
+}
+
+function _applyMatrixOfflineVisibility(root) {
+    const hidePlayerOnly = !game.user.isGM;
+    const hideOfflineRows = game.settings.get('sr5-custom-ui', 'hideMatrixOfflineRows') && hidePlayerOnly;
+    const scopes = root ? [root] : document.querySelectorAll('.sr5v2');
+    
+    // Haetaan v14-scenen kaikki voimassa olevat tokenit kartalta
+    const currentScene = canvas.scene;
+    if (!currentScene) return;
+    
+    // Haetaan kaikki kartalla fyysisesti olevat token-oliot (Placeables)
+    const allCanvasTokens = canvas.tokens.placeables;
+
+    for (const scope of scopes) {
+        // Katsotaan onko pelaaja itse verkossa
+        const hideAll = hidePlayerOnly && !_actorIsConnectedToNetwork(scope);
+        
+        scope.querySelectorAll('#network-icons-scroll .list-item-container, #marked-icons-scroll .list-item-container').forEach(row => {
+            
+            // 1. TARKISTUS: Piilotetut Tokenit (Ehdotuksesi mukainen dynaaminen UUID-vertailu)
+            // Etsitään row-elementin sisäpuolelta se elementti, jolla on data-uuid
+            const uuidElement = row.querySelector('[data-uuid]');
+            const rowUuid = uuidElement ? uuidElement.getAttribute('data-uuid') : null;
+            
+            let isTokenHidden = false;
+
+            if (rowUuid) {
+                // Etsitään kartalta se token, jonka actorin UUID mätsää HTML-rivin UUID:hen
+                const matchedToken = allCanvasTokens.find(t => {
+                    // Haetaan tokenin oman actorin virallinen uuid (tai _uuid v14-mallissa)
+                    const actorUuid = t.actor?.uuid || t.actor?._uuid;
+                    return actorUuid === rowUuid;
+                });
+
+                // Jos token löytyi ja se on piilotettu kartalla (GM-silmä kiinni)
+                if (matchedToken) {
+                    // Käytetään v14-varmistettua dokumenttitason tai löytämääsi polkua
+                    if (matchedToken.document?.hidden === true || matchedToken.actor?.token?.hidden === true) {
+                        isTokenHidden = true;
+                    }
+                }
+            }
+
+            // JOS TOKEN ON PIILOTETTU KARTALLA -> Piilotetaan rivi listalta KAIKILTA (Myös GM:ltä)
+            if (isTokenHidden) {
+                row.classList.toggle('sr5cui-hidden', true);
+                return; // Hypätään heti seuraavaan riviin
+            }
+
+            // 2. ALKUPERÄISET SÄÄNNÖT (Vain pelaajille, jos laite on näkyvissä kartalla)
+            if (hideAll) {
+                row.classList.toggle('sr5cui-hidden', true);
+                return;
+            }
+            const isOffline = row.closest('#network-icons-scroll') && !row.dataset.network?.trim();
+            row.classList.toggle('sr5cui-hidden', hideOfflineRows && isOffline);
+        });
+    }
+}
 
 function _collapseInitiativeMessages() {
     if (!game.settings.get('sr5-custom-ui', 'diceAccordion')) return;
