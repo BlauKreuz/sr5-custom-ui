@@ -27,12 +27,36 @@ const ROLL_MODE_ORDER = ['publicroll', 'gmroll', 'blindroll', 'selfroll'];
 function patchChatMessageApplyMode() {
     if (ChatMessage.applyMode.__sr5cuiPatched) return;
     const original = ChatMessage.applyMode.bind(ChatMessage);
+
+    // map legacy SR5 dice-mode keys to Foundry message-mode keys
+    const legacyMap = {
+        publicroll: "public",
+        gmroll:     "gm",
+        blindroll:  "blind",
+        selfroll:   "self",
+        ic:         "ic"
+    };
+
     const patched = function (chatData, rollMode, ...rest) {
-        if (!CONFIG.ChatMessage?.rollModes?.[rollMode]) {
-            rollMode = game.settings.get('core', 'rollMode');
+        // If rollMode is an object (sometimes happens) try to extract string
+        if (typeof rollMode !== "string") {
+            try { rollMode = String(rollMode); } catch (e) { rollMode = null; }
         }
+
+        // Prefer the current ChatMessage.modes map (V14+), fallback to legacy rollModes
+        const chatModes = CONFIG.ChatMessage?.modes ?? CONFIG.ChatMessage?.rollModes ?? {};
+
+        // Map legacy dice-mode keys to message-mode keys
+        if (rollMode && legacyMap[rollMode]) rollMode = legacyMap[rollMode];
+
+        // If not present in chatModes, fall back to core messageMode setting
+        if (!rollMode || !chatModes[rollMode]) {
+            rollMode = game.settings.get("core", "messageMode") || "public";
+        }
+
         return original(chatData, rollMode, ...rest);
     };
+
     patched.__sr5cuiPatched = true;
     ChatMessage.applyMode = patched;
 }
